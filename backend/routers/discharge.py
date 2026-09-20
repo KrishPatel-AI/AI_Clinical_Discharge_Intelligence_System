@@ -4,7 +4,8 @@ from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 
 from backend.config import get_ollama_base_url, get_ollama_model
 from backend.llm.provider import LLMProvider, OllamaProvider
-from backend.models.schemas import ExtractionResponse
+from backend.models.schemas import ExtractionResponse, ReviewResponse
+from backend.rag.workflow import review_extraction
 from backend.services.extraction import extract_upload
 
 router = APIRouter(prefix="/discharge", tags=["discharge"])
@@ -33,3 +34,17 @@ async def extract_discharge(
         content_type=file.content_type,
         extraction=extraction,
     )
+
+
+@router.post("/review", response_model=ReviewResponse)
+async def review_discharge(
+    file: UploadFile = FILE_UPLOAD, provider: LLMProvider = PROVIDER_DEPENDENCY
+) -> ReviewResponse:
+    """Extract, retrieve, and compare a discharge summary."""
+    try:
+        extraction = await extract_upload(file, provider)
+        return review_extraction(extraction)
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+    except RuntimeError as error:
+        raise HTTPException(status_code=502, detail=str(error)) from error

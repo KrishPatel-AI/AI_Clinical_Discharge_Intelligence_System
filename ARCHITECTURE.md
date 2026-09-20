@@ -72,8 +72,28 @@ and must not generate treatment recommendations from it.
   PDF, DOCX, and TXT files up to 5 MB; extracted fields are returned through
   the fixed Pydantic schema. The local Ollama adapter is the only active
   provider implementation.
+- Phase 4 implements `backend/rag/workflow.py` as a LangGraph workflow with
+  retrieve and compare nodes. Retrieval uses the Phase 2 FAISS index and a
+  fixed similarity threshold; below that threshold the workflow returns an
+  explicit no-match result and does not compare or invent guideline content.
+  The `POST /discharge/review` endpoint runs extraction followed by this
+  workflow. Phase 4 compares diagnosis, medicines, follow-up requirements,
+  and warning signs against the retrieved passage; scoring and suggestions
+  remain Phase 5 responsibilities.
 - Before treating a provider switch as safe, re-run the Ragas evaluation
   set and compare results against the Ollama baseline.
+
+## Guideline maintenance workflow
+Guideline coverage is folder-driven. To add a diagnosis, create
+`knowledge_base/guidelines/<diagnosis-slug>/`, place the sourced XML document
+and its `metadata.json` there, then run `python knowledge_base/ingest.py`.
+To update a diagnosis, replace its source document or metadata in the same
+folder and run the ingestion command again. Changed chunks are re-indexed;
+unchanged chunks keep their stable IDs. To remove a diagnosis, remove its
+folder and run ingestion again so the generated local FAISS index is rebuilt
+without that diagnosis. These operations do not require extraction, retrieval,
+comparison, or scoring code changes. Source attribution and reuse terms must
+remain recorded in each folder's metadata.
 
 ## Key decisions and why
 - **Ollama as the default LLM runtime, swappable by design** — avoids

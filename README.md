@@ -10,8 +10,9 @@ the AI never edits the discharge document itself.
 B.Tech Engineering Project – II, Semester VII, AY 2026-27, Group 5-B.
 
 ## Status
-Build not started yet — see [STATUS.md](./STATUS.md) for the current phase
-and the full phase plan.
+Phase 0 through Phase 3 are complete. Phase 4, RAG retrieval and
+section-level comparison, is in progress on the dedicated branch described
+in [STATUS.md](./STATUS.md).
 
 ## Documentation map
 - [ARCHITECTURE.md](./ARCHITECTURE.md) — system design: the five layers, the
@@ -22,8 +23,17 @@ and the full phase plan.
   this repo: stack, folder structure, commands, conventions, boundaries.
 
 ## How to run
-Not yet available — will be filled in once Phase 0 (repo scaffold) is
-complete. See STATUS.md.
+Use the project virtual environment, then build the local guideline index:
+
+```powershell
+.\.venv\Scripts\python.exe -m pip install -e ".[dev]"
+.\.venv\Scripts\python.exe knowledge_base\ingest.py
+.\.venv\Scripts\uvicorn.exe backend.main:app --reload
+```
+
+The API exposes `/health`, `/discharge/extract`, and the Phase 4
+`/discharge/review` endpoint. Run the test suite with
+`.\.venv\Scripts\python.exe -m pytest`.
 
 ## Scope
 No real patient data is used or stored. The system does not connect to any
