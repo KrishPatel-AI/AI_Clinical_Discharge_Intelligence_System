@@ -30,8 +30,8 @@ work on.
 - Phase 4 is complete: the retrieval and comparison workflow was merged to
   `main` through `phase-4-rag-retrieval-comparison`, including known-diagnosis
   and no-match tests.
-- Active phase: **Phase 7 — Streamlit review UI** (next phase after merging
-  `phase-6-persistence-audit-log`)
+- Active phase: **Phase 6 — Persistence & audit log** (implementation and
+  validation complete on `phase-6-persistence-audit-log`; merge is pending)
 - Last updated: 2026-09-20
 
 ## Definition of done — applies to every phase below
@@ -86,7 +86,7 @@ current one is merged to `main` and marked done here.
   and suggestions; a test asserts every suggestion carries a guideline
   reference and that low-confidence retrieval never produces a guessed
   suggestion.
-- [x] **Phase 6 — Persistence & audit log.** PostgreSQL schema for users,
+- [ ] **Phase 6 — Persistence & audit log.** PostgreSQL schema for users,
   reports, audit logs, via the ORM only. Doctor accept/ignore decisions
   recorded per suggestion with a timestamp. Done = a full review cycle is
   retrievable from the database afterward.
@@ -154,6 +154,7 @@ that's already "done."
   guideline-grounded suggestions, no-match suppression, and a real endpoint
   workflow test were verified on `main`; Phase 6 started on the dedicated
   `phase-6-persistence-audit-log` branch.
-- 2026-09-20 — Phase 6 marked complete after ORM-backed report creation,
-  retrieval, explicit suggestion decisions, timestamped audit records, and
-  isolated database integration tests passed; Phase 7 is next.
+- 2026-09-20 — Phase 6 implementation was validated with ORM-backed report
+  creation, retrieval, explicit suggestion decisions, timestamped audit
+  records, and isolated database integration tests; the phase remains pending
+  merge to `main`.
