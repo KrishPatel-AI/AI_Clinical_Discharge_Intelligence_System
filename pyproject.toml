@@ -38,6 +38,9 @@ testpaths = ["tests"]
 line-length = 88
 target-version = "py311"
 
+[tool.ruff.lint.isort]
+known-first-party = ["backend"]
+
 [tool.mypy]
 python_version = "3.11"
 strict = true
