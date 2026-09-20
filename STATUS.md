@@ -27,8 +27,8 @@ work on.
 - Phase 3 is complete: validated PDF, DOCX, and TXT uploads return the fixed
   extraction schema through the FastAPI endpoint, with success/failure tests
   and a live synthetic Ollama-provider check.
-- Active phase: **Phase 3 — Document extraction** (complete on this branch;
-  activate Phase 4 after merge to `main`)
+- Active phase: **Phase 4 — RAG retrieval + comparison** (in progress on
+  `phase-4-rag-retrieval-comparison`; merge only after the Phase 4 checks pass)
 - Last updated: 2026-09-20
 
 ## Definition of done — applies to every phase below
@@ -141,5 +141,5 @@ that's already "done."
   pressure; Phase 3 started for document extraction.
 - 2026-09-20 — Phase 3 marked complete after PDF, DOCX, and TXT validation,
   structured extraction tests, endpoint testing, and a synthetic live Ollama
-  provider check; Phase 4 is ready to start after this branch is merged to
-  `main`.
+  provider check; Phase 4 started on the dedicated
+  `phase-4-rag-retrieval-comparison` branch.

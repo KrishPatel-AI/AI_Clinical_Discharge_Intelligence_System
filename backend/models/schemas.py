@@ -18,3 +18,32 @@ class ExtractionResponse(BaseModel):
     filename: str
     content_type: str | None
     extraction: DischargeExtraction
+
+
+class GuidelineMatch(BaseModel):
+    """The guideline evidence selected for a diagnosis."""
+
+    diagnosis: str
+    diagnosis_slug: str
+    source_url: str
+    passage: str
+    similarity: float = Field(ge=0.0, le=1.0)
+
+
+class ComparisonItem(BaseModel):
+    """Comparison result for one extracted discharge-summary section."""
+
+    section: str
+    status: str
+    extracted_values: list[str] = Field(default_factory=list)
+    guideline_passage: str
+
+
+class ReviewResponse(BaseModel):
+    """Phase 4 retrieval and comparison result."""
+
+    diagnosis: str
+    status: str
+    message: str
+    guideline: GuidelineMatch | None = None
+    comparisons: list[ComparisonItem] = Field(default_factory=list)
