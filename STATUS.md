@@ -14,9 +14,22 @@ work on.
 - University Review-I (design & planning) is complete: problem statement,
   objectives, literature review, architecture, and tech stack are all
   approved (see ARCHITECTURE.md).
-- No code has been written yet. No guideline data has been sourced yet.
-- Active phase: **Phase 0 — Repo scaffold & environment**
-- Last updated: *(update this line each time you touch this file)*
+- Phase 0 is complete: the scaffold, local Python environment, Ollama
+  installation/model, FastAPI and Streamlit entry points, ignore rules, and
+  CI quality gates are merged to `main` and passing.
+- Phase 1 is complete: three official MedlinePlus XML health-topic records
+  and per-diagnosis metadata with attribution terms are stored under
+  `knowledge_base/guidelines/`.
+- Phase 2 is complete: the sourced XML records are parsed, chunked, and
+  incrementally indexed in FAISS with stable IDs; repeated runs do not
+  duplicate chunks, and queries return the expected diagnosis for all three
+  initial records.
+- Phase 3 is complete: validated PDF, DOCX, and TXT uploads return the fixed
+  extraction schema through the FastAPI endpoint, with success/failure tests
+  and a live synthetic Ollama-provider check.
+- Active phase: **Phase 3 — Document extraction** (complete on this branch;
+  activate Phase 4 after merge to `main`)
+- Last updated: 2026-09-20
 
 ## Definition of done — applies to every phase below
 - Tests exist for its success path and at least one realistic failure
@@ -34,13 +47,13 @@ work on.
 Work exactly one phase at a time. Do not start the next phase until the
 current one is merged to `main` and marked done here.
 
-- [ ] **Phase 0 — Repo scaffold & environment.** Folder structure from
+- [x] **Phase 0 — Repo scaffold & environment.** Folder structure from
   AGENTS.md, Python virtual environment / requirements file, Ollama
   installed with one model pulled locally, empty FastAPI and Streamlit
   entry points that run, `.gitignore` covering `.env` and local artifacts,
   CI workflow skeleton. Done = both `uvicorn` and `streamlit run` start
   without errors, CI runs green on an empty repo.
-- [ ] **Phase 1 — Source & structure guideline data.** No RAG knowledge
+- [x] **Phase 1 — Source & structure guideline data.** No RAG knowledge
   required for this phase — it's about finding and organizing real
   documents, not code. Evaluate MedlinePlus and/or public Indian government
   guideline documents (see ARCHITECTURE.md), pick 2–3 starting diagnoses,
@@ -49,12 +62,12 @@ current one is merged to `main` and marked done here.
   (source, URL, date retrieved). Done = 2–3 diagnosis folders exist with
   real, sourced documents and recorded licensing terms; ARCHITECTURE.md's
   "Guideline data" section is updated with what was actually chosen.
-- [ ] **Phase 2 — Guideline ingestion & indexing.** Write the
+- [x] **Phase 2 — Guideline ingestion & indexing.** Write the
   chunking/embedding script, index the Phase 1 documents into
   ChromaDB/FAISS, make the script idempotent and re-runnable. Done = a
   test script queries the store and gets back a relevant guideline chunk
   for each of the starting diagnoses.
-- [ ] **Phase 3 — Document extraction.** FastAPI endpoint that accepts an
+- [x] **Phase 3 — Document extraction.** FastAPI endpoint that accepts an
   uploaded file (PDF/Word/text), validates it, extracts diagnosis,
   medicines, follow-up info, and warning signs via the LLM provider
   abstraction. Done = uploading a sample summary returns structured JSON,
@@ -117,3 +130,16 @@ that's already "done."
   the deployment phase.
 - *(add new entries here as real decisions get made — one line, with the
   reason)*
+- 2026-09-20 — Phase 0 marked complete after the scaffold was merged to
+  `main` and CI passed; Phase 1 started on a separate branch for guideline
+  source evaluation.
+- 2026-09-20 — Phase 1 marked complete after three MedlinePlus records were
+  retrieved, validated as XML, organized by diagnosis, and documented with
+  source and attribution metadata; Phase 2 started for indexing.
+- 2026-09-20 — Phase 2 marked complete after the idempotent FAISS index was
+  implemented and queried successfully for diabetes, asthma, and high blood
+  pressure; Phase 3 started for document extraction.
+- 2026-09-20 — Phase 3 marked complete after PDF, DOCX, and TXT validation,
+  structured extraction tests, endpoint testing, and a synthetic live Ollama
+  provider check; Phase 4 is ready to start after this branch is merged to
+  `main`.

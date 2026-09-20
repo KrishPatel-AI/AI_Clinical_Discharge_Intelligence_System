@@ -41,19 +41,24 @@ instead of guessing.
 | Data | PostgreSQL | Stores users, generated reports, audit logs, dashboard metrics |
 | Monitoring (cross-cutting) | Langfuse, Ragas | Langfuse traces every prompt/response/latency/error; Ragas evaluates retrieval quality, faithfulness, answer relevance, context precision |
 
-## Guideline data — status: not yet sourced
-No guideline dataset has been chosen or ingested yet. Candidates to
-evaluate in Phase 1 (see AGENTS.md for the sourcing note):
-- MedlinePlus (U.S. National Library of Medicine) — free, structured
-  patient-care and discharge-instruction content with XML data files and a
-  connect API. Reuse/redistribution terms must be verified on
-  medlineplus.gov before ingestion.
-- Publicly published Indian government/hospital standard treatment
-  guidelines (e.g. National Health Mission or ICMR-published documents),
-  where available as public PDFs.
-This section will be updated with the actual source(s), licensing terms,
-and diagnosis coverage once Phase 1 is complete — do not treat this as
-decided until then.
+## Guideline data — Phase 1 initial source set
+The initial source set contains three MedlinePlus Health Topics XML records
+retrieved on 2026-09-20 through the official MedlinePlus Web Service:
+
+- Diabetes mellitus — `knowledge_base/guidelines/diabetes/`
+- Asthma — `knowledge_base/guidelines/asthma/`
+- High blood pressure — `knowledge_base/guidelines/high-blood-pressure/`
+
+MedlinePlus states that its Web Service is free of charge and does not require
+registration or licensing. Any application using the data must identify
+MedlinePlus.gov as the source, must not use the MedlinePlus logo, and must not
+imply MedlinePlus endorsement. The exact source URL, retrieval URL, date, and
+terms are recorded in each diagnosis folder's `metadata.json`.
+
+These records are patient and family health reference content, not prescriptive
+clinical practice guidelines. Until a suitable licensed standard-treatment
+guideline source is selected, the system must describe this coverage honestly
+and must not generate treatment recommendations from it.
 
 ## LLM provider strategy
 - Development and initial deployment run on Ollama (local), to avoid
@@ -62,6 +67,11 @@ decided until then.
   so switching to a cloud model later is a configuration change, not a
   rewrite. The extraction/scoring output schema is fixed regardless of
   provider.
+- Phase 3 implements the provider boundary in `backend/llm/provider.py` and
+  the extraction endpoint at `POST /discharge/extract`. Uploads accept only
+  PDF, DOCX, and TXT files up to 5 MB; extracted fields are returned through
+  the fixed Pydantic schema. The local Ollama adapter is the only active
+  provider implementation.
 - Before treating a provider switch as safe, re-run the Ragas evaluation
   set and compare results against the Ollama baseline.
 
@@ -121,6 +131,13 @@ concrete checklist behind each one.
 - Regional language support (Hindi, Gujarati, etc.)
 
 ## Revision log
+- 2026-09-20 — Added Phase 3 document extraction with validated PDF, DOCX,
+  and TXT uploads, a fixed Pydantic output contract, and the Ollama provider
+  adapter behind the required LLM interface.
+- 2026-09-20 — Added the initial Phase 1 MedlinePlus source set for diabetes,
+  asthma, and high blood pressure, including per-source metadata and an
+  explicit limitation that these are reference topics rather than clinical
+  practice guidelines.
 - 2026-09-20 — Added Non-functional requirements section.
 - 2026-09-20 — Added the RAG plain-language explainer, guideline data
   sourcing status (not yet sourced — candidates listed), LLM provider

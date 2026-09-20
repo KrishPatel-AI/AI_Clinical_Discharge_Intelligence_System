@@ -27,7 +27,8 @@ data/
 storage/
 chroma/
 faiss_index/
-models/
+knowledge_base/.faiss/
+/models/
 artifacts/
 outputs/
 logs/
