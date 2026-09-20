@@ -16,3 +16,8 @@ def get_ollama_base_url() -> str:
 def get_ollama_model() -> str:
     """Return the configured local Ollama model."""
     return os.getenv("OLLAMA_MODEL", "llama3.2:3b")
+
+
+def get_database_url() -> str:
+    """Return the configured SQLAlchemy database URL."""
+    return os.getenv("DATABASE_URL", "sqlite:///./clinical_discharge.db")

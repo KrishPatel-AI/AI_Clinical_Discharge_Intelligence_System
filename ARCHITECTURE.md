@@ -85,6 +85,12 @@ and must not generate treatment recommendations from it.
   the exact retrieved passage and its source URL. A no-match result carries
   neither a score nor suggestions, so the system cannot produce an
   unsupported guess.
+- Phase 6 adds SQLAlchemy ORM persistence for users, reports, suggestions, and
+  audit logs. `DATABASE_URL` selects the database, with PostgreSQL as the
+  deployment database and SQLite as the local default. A review creates one
+  report and its suggestions in one transaction; a doctor decision updates the
+  suggestion and appends a timestamped audit record. Reports can be retrieved
+  after the original review request has ended.
 - Before treating a provider switch as safe, re-run the Ragas evaluation
   set and compare results against the Ollama baseline.
 
@@ -156,6 +162,9 @@ concrete checklist behind each one.
 - Regional language support (Hindi, Gujarati, etc.)
 
 ## Revision log
+- 2026-09-20 — Added Phase 6 SQLAlchemy ORM persistence for reports and
+  suggestions, explicit accept/ignore decision routes, and timestamped audit
+  records on the `phase-6-persistence-audit-log` branch.
 - 2026-09-20 — Added Phase 5 deterministic completeness scoring,
   guideline-passage-backed suggestions, and no-match score/suggestion
   suppression on the `phase-5-scoring-explanations-guardrails` branch.

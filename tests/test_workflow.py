@@ -5,7 +5,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from backend.main import app
-from backend.models.schemas import DischargeExtraction, ReviewResponse, Suggestion
+from backend.models.schemas import DischargeExtraction, ReviewResponse
 from backend.rag.workflow import review_extraction
 from backend.routers import discharge
 from backend.routers.discharge import get_llm_provider
@@ -73,26 +73,18 @@ def test_review_reports_no_match_without_comparisons(index_dir: Path) -> None:
     assert "No matching guideline" in result.message
 
 
-def test_review_endpoint_returns_workflow_result(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_review_endpoint_returns_workflow_result(
+    monkeypatch: pytest.MonkeyPatch, index_dir: Path
+) -> None:
     class FakeProvider:
         def extract_discharge(self, text: str) -> DischargeExtraction:
             return DischargeExtraction(diagnosis="Asthma")
 
-    expected = ReviewResponse(
-        diagnosis="Asthma",
-        status="matched",
-        message="Test workflow result",
-        completeness_score=75,
-        suggestions=[
-            Suggestion(
-                section="warning_signs",
-                explanation="Review the warning signs section.",
-                guideline_passage="Synthetic guideline passage.",
-                source_url="https://example.test/guideline",
-            )
-        ],
+    monkeypatch.setattr(
+        discharge,
+        "review_extraction",
+        lambda extraction: review_extraction(extraction, index_dir),
     )
-    monkeypatch.setattr(discharge, "review_extraction", lambda extraction: expected)
 
     app.dependency_overrides[get_llm_provider] = FakeProvider
     try:
@@ -104,7 +96,14 @@ def test_review_endpoint_returns_workflow_result(monkeypatch: pytest.MonkeyPatch
         app.dependency_overrides.clear()
 
     assert response.status_code == 200
-    assert response.json() == expected.model_dump()
+    result = ReviewResponse.model_validate(response.json())
+    assert result.status == "matched"
+    assert result.completeness_score is not None
+    assert result.suggestions
+    assert all(
+        suggestion.guideline_passage and suggestion.source_url
+        for suggestion in result.suggestions
+    )
 
 
 def test_review_endpoint_rejects_unsupported_upload() -> None:

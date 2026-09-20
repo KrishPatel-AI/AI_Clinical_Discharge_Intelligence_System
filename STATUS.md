@@ -30,9 +30,8 @@ work on.
 - Phase 4 is complete: the retrieval and comparison workflow was merged to
   `main` through `phase-4-rag-retrieval-comparison`, including known-diagnosis
   and no-match tests.
-- Active phase: **Phase 5 — Scoring, explanations & guardrails** (in progress
-  on `phase-5-scoring-explanations-guardrails`; merge only after the Phase 5
-  checks pass)
+- Active phase: **Phase 7 — Streamlit review UI** (next phase after merging
+  `phase-6-persistence-audit-log`)
 - Last updated: 2026-09-20
 
 ## Definition of done — applies to every phase below
@@ -81,13 +80,13 @@ current one is merged to `main` and marked done here.
   match), compare section-by-section against the extracted summary. Done =
   the workflow returns matched items and gaps for a known test case, and
   correctly reports "no match" for a diagnosis outside current coverage.
-- [ ] **Phase 5 — Scoring, explanations & guardrails.** Turn the comparison
+- [x] **Phase 5 — Scoring, explanations & guardrails.** Turn the comparison
   into a completeness score and suggestions, each citing the specific
   guideline passage. Done = a sample upload produces a verifiable score
   and suggestions; a test asserts every suggestion carries a guideline
   reference and that low-confidence retrieval never produces a guessed
   suggestion.
-- [ ] **Phase 6 — Persistence & audit log.** PostgreSQL schema for users,
+- [x] **Phase 6 — Persistence & audit log.** PostgreSQL schema for users,
   reports, audit logs, via the ORM only. Doctor accept/ignore decisions
   recorded per suggestion with a timestamp. Done = a full review cycle is
   retrievable from the database afterward.
@@ -151,3 +150,10 @@ that's already "done."
   workflow, API endpoint, known-diagnosis tests, and explicit no-match tests
   were merged to `main`; Phase 5 started on the dedicated
   `phase-5-scoring-explanations-guardrails` branch.
+- 2026-09-20 — Phase 5 marked complete after deterministic scoring,
+  guideline-grounded suggestions, no-match suppression, and a real endpoint
+  workflow test were verified on `main`; Phase 6 started on the dedicated
+  `phase-6-persistence-audit-log` branch.
+- 2026-09-20 — Phase 6 marked complete after ORM-backed report creation,
+  retrieval, explicit suggestion decisions, timestamped audit records, and
+  isolated database integration tests passed; Phase 7 is next.
