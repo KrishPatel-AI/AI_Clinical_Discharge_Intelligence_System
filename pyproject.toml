@@ -52,4 +52,4 @@ module = ["numpy", "numpy.*"]
 follow_imports = "skip"
 
 [tool.setuptools.packages.find]
-include = ["backend*"]
+include = ["backend*", "knowledge_base*"]
