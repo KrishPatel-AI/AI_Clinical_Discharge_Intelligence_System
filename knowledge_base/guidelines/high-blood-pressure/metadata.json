@@ -1,0 +1,10 @@
+{
+  "diagnosis": "High blood pressure",
+  "synonyms": ["high blood pressure", "hypertension", "HBP", "HTN"],
+  "source_name": "MedlinePlus Health Topics",
+  "source_url": "https://medlineplus.gov/highbloodpressure.html",
+  "retrieval_url": "https://wsearch.nlm.nih.gov/ws/query?db=healthTopics&term=title%3A%22high+blood+pressure%22&retmax=1&rettype=topic&tool=clinical-discharge-intelligence",
+  "date_retrieved": "2026-09-20",
+  "license_terms": "MedlinePlus states that its web service is free of charge and does not require registration or licensing. Applications using the data must identify MedlinePlus.gov as the source and must not imply MedlinePlus endorsement or use its logo.",
+  "content_scope": "Patient and family health information for prototype reference retrieval; not a substitute for professional medical advice or a clinical practice guideline."
+}
