@@ -27,8 +27,12 @@ work on.
 - Phase 3 is complete: validated PDF, DOCX, and TXT uploads return the fixed
   extraction schema through the FastAPI endpoint, with success/failure tests
   and a live synthetic Ollama-provider check.
-- Active phase: **Phase 4 — RAG retrieval + comparison** (in progress on
-  `phase-4-rag-retrieval-comparison`; merge only after the Phase 4 checks pass)
+- Phase 4 is complete: the retrieval and comparison workflow was merged to
+  `main` through `phase-4-rag-retrieval-comparison`, including known-diagnosis
+  and no-match tests.
+- Active phase: **Phase 5 — Scoring, explanations & guardrails** (in progress
+  on `phase-5-scoring-explanations-guardrails`; merge only after the Phase 5
+  checks pass)
 - Last updated: 2026-09-20
 
 ## Definition of done — applies to every phase below
@@ -72,7 +76,7 @@ current one is merged to `main` and marked done here.
   medicines, follow-up info, and warning signs via the LLM provider
   abstraction. Done = uploading a sample summary returns structured JSON,
   with tests for a valid and an invalid file.
-- [ ] **Phase 4 — RAG retrieval + comparison.** LangGraph workflow: take
+- [x] **Phase 4 — RAG retrieval + comparison.** LangGraph workflow: take
   the extracted diagnosis, retrieve the matching guideline (or report no
   match), compare section-by-section against the extracted summary. Done =
   the workflow returns matched items and gaps for a known test case, and
@@ -143,3 +147,7 @@ that's already "done."
   structured extraction tests, endpoint testing, and a synthetic live Ollama
   provider check; Phase 4 started on the dedicated
   `phase-4-rag-retrieval-comparison` branch.
+- 2026-09-20 — Phase 4 marked complete after the retrieval/comparison
+  workflow, API endpoint, known-diagnosis tests, and explicit no-match tests
+  were merged to `main`; Phase 5 started on the dedicated
+  `phase-5-scoring-explanations-guardrails` branch.

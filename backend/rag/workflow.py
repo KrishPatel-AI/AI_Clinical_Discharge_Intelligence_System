@@ -13,6 +13,7 @@ from backend.models.schemas import (
     DischargeExtraction,
     GuidelineMatch,
     ReviewResponse,
+    Suggestion,
 )
 from knowledge_base.ingest import DEFAULT_INDEX_DIR, query_index
 
@@ -97,13 +98,44 @@ def _compare(state: ReviewState) -> dict[str, Any]:
     }
 
 
+def _score(state: ReviewState) -> dict[str, ReviewResponse]:
+    result = state["result"]
+    match = state.get("match")
+    if match is None:
+        return {"result": result}
+
+    comparisons = state.get("comparisons", [])
+    matched_count = sum(item.status == "matched" for item in comparisons)
+    score = round(100 * matched_count / len(comparisons)) if comparisons else 0
+    suggestions = [
+        Suggestion(
+            section=item.section,
+            explanation=(
+                f"Review the {item.section.replace('_', ' ')} section against "
+                "the retrieved guideline passage."
+            ),
+            guideline_passage=item.guideline_passage,
+            source_url=match.source_url,
+        )
+        for item in comparisons
+        if item.status == "gap"
+    ]
+    return {
+        "result": result.model_copy(
+            update={"completeness_score": score, "suggestions": suggestions}
+        )
+    }
+
+
 def _build_graph() -> Any:
     graph = StateGraph(ReviewState)
     graph.add_node("retrieve", _retrieve)
     graph.add_node("compare", _compare)
+    graph.add_node("score", _score)
     graph.add_edge(START, "retrieve")
     graph.add_edge("retrieve", "compare")
-    graph.add_edge("compare", END)
+    graph.add_edge("compare", "score")
+    graph.add_edge("score", END)
     return graph.compile()
 
 

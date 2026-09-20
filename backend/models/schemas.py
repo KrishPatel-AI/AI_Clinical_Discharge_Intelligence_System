@@ -39,11 +39,22 @@ class ComparisonItem(BaseModel):
     guideline_passage: str
 
 
+class Suggestion(BaseModel):
+    """A review item grounded in the retrieved guideline passage."""
+
+    section: str
+    explanation: str
+    guideline_passage: str
+    source_url: str
+
+
 class ReviewResponse(BaseModel):
-    """Phase 4 retrieval and comparison result."""
+    """Retrieval, comparison, and Phase 5 scoring result."""
 
     diagnosis: str
     status: str
     message: str
     guideline: GuidelineMatch | None = None
     comparisons: list[ComparisonItem] = Field(default_factory=list)
+    completeness_score: int | None = Field(default=None, ge=0, le=100)
+    suggestions: list[Suggestion] = Field(default_factory=list)

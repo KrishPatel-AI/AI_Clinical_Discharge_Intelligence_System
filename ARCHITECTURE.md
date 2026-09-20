@@ -80,6 +80,11 @@ and must not generate treatment recommendations from it.
   workflow. Phase 4 compares diagnosis, medicines, follow-up requirements,
   and warning signs against the retrieved passage; scoring and suggestions
   remain Phase 5 responsibilities.
+- Phase 5 adds a deterministic completeness score based on comparison status
+  and creates suggestions only for comparison gaps. Every suggestion carries
+  the exact retrieved passage and its source URL. A no-match result carries
+  neither a score nor suggestions, so the system cannot produce an
+  unsupported guess.
 - Before treating a provider switch as safe, re-run the Ragas evaluation
   set and compare results against the Ollama baseline.
 
@@ -151,6 +156,9 @@ concrete checklist behind each one.
 - Regional language support (Hindi, Gujarati, etc.)
 
 ## Revision log
+- 2026-09-20 — Added Phase 5 deterministic completeness scoring,
+  guideline-passage-backed suggestions, and no-match score/suggestion
+  suppression on the `phase-5-scoring-explanations-guardrails` branch.
 - 2026-09-20 — Added Phase 3 document extraction with validated PDF, DOCX,
   and TXT uploads, a fixed Pydantic output contract, and the Ollama provider
   adapter behind the required LLM interface.

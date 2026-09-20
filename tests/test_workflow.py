@@ -5,7 +5,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from backend.main import app
-from backend.models.schemas import DischargeExtraction, ReviewResponse
+from backend.models.schemas import DischargeExtraction, ReviewResponse, Suggestion
 from backend.rag.workflow import review_extraction
 from backend.routers import discharge
 from backend.routers.discharge import get_llm_provider
@@ -35,6 +35,29 @@ def test_review_retrieves_guideline_and_compares_sections(index_dir: Path) -> No
     assert result.guideline.diagnosis_slug == "asthma"
     assert result.comparisons
     assert {item.status for item in result.comparisons} <= {"matched", "gap"}
+    assert result.completeness_score is not None
+    assert 0 <= result.completeness_score <= 100
+    assert result.suggestions
+    assert all(
+        suggestion.guideline_passage and suggestion.source_url
+        for suggestion in result.suggestions
+    )
+
+
+def test_review_scores_complete_summary_without_suggestions(index_dir: Path) -> None:
+    result = review_extraction(
+        DischargeExtraction(
+            diagnosis="Asthma",
+            medications=["Asthma"],
+            follow_up_requirements=["Asthma"],
+            warning_signs=["Asthma"],
+        ),
+        index_dir,
+    )
+
+    assert result.status == "matched"
+    assert result.completeness_score == 100
+    assert result.suggestions == []
 
 
 def test_review_reports_no_match_without_comparisons(index_dir: Path) -> None:
@@ -45,6 +68,8 @@ def test_review_reports_no_match_without_comparisons(index_dir: Path) -> None:
     assert result.status == "no_match"
     assert result.guideline is None
     assert result.comparisons == []
+    assert result.completeness_score is None
+    assert result.suggestions == []
     assert "No matching guideline" in result.message
 
 
@@ -55,8 +80,17 @@ def test_review_endpoint_returns_workflow_result(monkeypatch: pytest.MonkeyPatch
 
     expected = ReviewResponse(
         diagnosis="Asthma",
-        status="no_match",
+        status="matched",
         message="Test workflow result",
+        completeness_score=75,
+        suggestions=[
+            Suggestion(
+                section="warning_signs",
+                explanation="Review the warning signs section.",
+                guideline_passage="Synthetic guideline passage.",
+                source_url="https://example.test/guideline",
+            )
+        ],
     )
     monkeypatch.setattr(discharge, "review_extraction", lambda extraction: expected)
 

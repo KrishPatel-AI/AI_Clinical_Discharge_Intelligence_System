@@ -10,9 +10,9 @@ the AI never edits the discharge document itself.
 B.Tech Engineering Project – II, Semester VII, AY 2026-27, Group 5-B.
 
 ## Status
-Phase 0 through Phase 3 are complete. Phase 4, RAG retrieval and
-section-level comparison, is in progress on the dedicated branch described
-in [STATUS.md](./STATUS.md).
+Phase 0 through Phase 4 are complete. Phase 5, scoring, explanations, and
+guardrails, is in progress on the dedicated branch described in
+[STATUS.md](./STATUS.md).
 
 ## Documentation map
 - [ARCHITECTURE.md](./ARCHITECTURE.md) — system design: the five layers, the
