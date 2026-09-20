@@ -10,8 +10,8 @@ the AI never edits the discharge document itself.
 B.Tech Engineering Project – II, Semester VII, AY 2026-27, Group 5-B.
 
 ## Status
-Phase 0 through Phase 4 are complete. Phase 5, scoring, explanations, and
-guardrails, is in progress on the dedicated branch described in
+Phase 0 through Phase 5 are complete. Phase 6, persistence and audit logging,
+is in progress on the dedicated branch described in
 [STATUS.md](./STATUS.md).
 
 ## Documentation map
@@ -31,8 +31,11 @@ Use the project virtual environment, then build the local guideline index:
 .\.venv\Scripts\uvicorn.exe backend.main:app --reload
 ```
 
-The API exposes `/health`, `/discharge/extract`, and the Phase 4
-`/discharge/review` endpoint. Run the test suite with
+The API exposes `/health`, `/discharge/extract`, `/discharge/review`,
+`/discharge/reports/{report_id}`, and the suggestion decision endpoint under
+`/discharge/reports/{report_id}/suggestions/{suggestion_id}/decision`. Set
+`DATABASE_URL` to a PostgreSQL SQLAlchemy URL for deployment; local runs use a
+SQLite file by default. Run the test suite with
 `.\.venv\Scripts\python.exe -m pytest`.
 
 ## Scope

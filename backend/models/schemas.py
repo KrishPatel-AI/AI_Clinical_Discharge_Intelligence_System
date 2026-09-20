@@ -1,5 +1,7 @@
 """Pydantic contracts shared by extraction and API layers."""
 
+from typing import Literal
+
 from pydantic import BaseModel, Field
 
 
@@ -46,6 +48,8 @@ class Suggestion(BaseModel):
     explanation: str
     guideline_passage: str
     source_url: str
+    suggestion_id: int | None = None
+    decision: Literal["accepted", "ignored"] | None = None
 
 
 class ReviewResponse(BaseModel):
@@ -58,3 +62,45 @@ class ReviewResponse(BaseModel):
     comparisons: list[ComparisonItem] = Field(default_factory=list)
     completeness_score: int | None = Field(default=None, ge=0, le=100)
     suggestions: list[Suggestion] = Field(default_factory=list)
+    report_id: int | None = None
+
+
+class DecisionRequest(BaseModel):
+    """A doctor's explicit decision about one generated suggestion."""
+
+    decision: Literal["accepted", "ignored"]
+
+
+class AuditLogResponse(BaseModel):
+    """One persisted doctor decision."""
+
+    id: int
+    suggestion_id: int
+    decision: Literal["accepted", "ignored"]
+    decided_at: str
+
+
+class PersistedSuggestion(BaseModel):
+    """A suggestion and its current review decision."""
+
+    id: int
+    section: str
+    explanation: str
+    guideline_passage: str
+    source_url: str
+    decision: Literal["accepted", "ignored"] | None = None
+    decided_at: str | None = None
+
+
+class PersistedReportResponse(BaseModel):
+    """A report with all suggestions and their audit history."""
+
+    id: int
+    filename: str
+    diagnosis: str
+    status: str
+    message: str
+    completeness_score: int | None = Field(default=None, ge=0, le=100)
+    created_at: str
+    suggestions: list[PersistedSuggestion] = Field(default_factory=list)
+    audit_logs: list[AuditLogResponse] = Field(default_factory=list)
