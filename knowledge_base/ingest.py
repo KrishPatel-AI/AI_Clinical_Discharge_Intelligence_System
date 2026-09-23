@@ -61,6 +61,41 @@ def _chunks(text: str) -> list[str]:
 
 def _read_records(guidelines_dir: Path) -> list[dict[str, Any]]:
     records: list[dict[str, Any]] = []
+    markdown_paths = sorted(guidelines_dir.glob("*/*.md"))
+    for source_path in markdown_paths:
+        text = source_path.read_text(encoding="utf-8")
+        if not text.strip():
+            raise ValueError(f"Empty Markdown document: {source_path}")
+        if "�" in text:
+            continue
+        metadata_path = source_path.parent / "metadata.json"
+        source_url = ""
+        diagnosis = source_path.parent.name
+        if metadata_path.exists():
+            source_metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+            for document in source_metadata.get("documents", []):
+                document_filename = str(document.get("filename") or "")
+                if Path(document_filename).stem == source_path.stem:
+                    source_url = str(document.get("source_url") or "")
+                    diagnosis = str(document.get("diagnosis") or diagnosis)
+                    break
+        if not source_url:
+            continue
+        for chunk_number, chunk in enumerate(_chunks(text)):
+            records.append(
+                {
+                    "id": f"{source_path.parent.name}:{source_path.name}:{chunk_number}",
+                    "document": chunk,
+                    "metadata": {
+                        "diagnosis": diagnosis,
+                        "diagnosis_slug": source_path.parent.name,
+                        "source_url": source_url,
+                        "source_file": source_path.name,
+                        "chunk_number": chunk_number,
+                    },
+                }
+            )
+
     for source_path in sorted(guidelines_dir.glob("*/medlineplus-health-topic.xml")):
         root = ET.parse(source_path).getroot()
         if root is None:
@@ -113,7 +148,7 @@ def build_index(
     """Incrementally add new chunks without duplicating existing chunks."""
     records = _read_records(guidelines_dir)
     if not records:
-        raise ValueError(f"No guideline XML files found in {guidelines_dir}")
+        raise ValueError(f"No guideline Markdown or XML files found in {guidelines_dir}")
     index_dir.mkdir(parents=True, exist_ok=True)
     index_path, metadata_path = _index_paths(index_dir)
     current_by_id = {record["id"]: record for record in records}

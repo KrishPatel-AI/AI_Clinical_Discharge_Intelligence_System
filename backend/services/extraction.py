@@ -37,6 +37,14 @@ def _extract_text(filename: str, content: bytes) -> str:
 
 async def extract_upload(upload: UploadFile, provider: LLMProvider) -> DischargeExtraction:
     """Validate an upload, extract text, and call the configured provider."""
+    _, extraction = await extract_upload_document(upload, provider)
+    return extraction
+
+
+async def extract_upload_document(
+    upload: UploadFile, provider: LLMProvider
+) -> tuple[str, DischargeExtraction]:
+    """Return sanitized source text and its structured extraction."""
     filename = upload.filename or ""
     if Path(filename).suffix.lower() not in SUPPORTED_EXTENSIONS:
         raise ValueError("Unsupported file type. Use PDF, DOCX, or TXT.")
@@ -46,4 +54,4 @@ async def extract_upload(upload: UploadFile, provider: LLMProvider) -> Discharge
     text = _extract_text(filename, content)
     if not text:
         raise ValueError("The uploaded document contains no readable text.")
-    return provider.extract_discharge(text)
+    return text, provider.extract_discharge(text)

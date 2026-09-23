@@ -40,16 +40,25 @@ def _retrieve(state: ReviewState) -> dict[str, GuidelineMatch | None]:
         index_dir=state.get("index_dir", DEFAULT_INDEX_DIR),
         limit=RETRIEVAL_LIMIT,
     )
-    if not result["distances"] or float(result["distances"][0]) < MIN_RETRIEVAL_SIMILARITY:
+    if not result["distances"]:
         return {"match": None}
-    metadata = result["metadatas"][0]
+    query_tokens = _tokens(extraction.diagnosis)
+    candidate_positions = [
+        position
+        for position, metadata in enumerate(result["metadatas"])
+        if query_tokens & _tokens(str(metadata.get("diagnosis", "")))
+    ]
+    selected_position = candidate_positions[0] if candidate_positions else 0
+    if float(result["distances"][selected_position]) < MIN_RETRIEVAL_SIMILARITY:
+        return {"match": None}
+    metadata = result["metadatas"][selected_position]
     return {
         "match": GuidelineMatch(
             diagnosis=str(metadata["diagnosis"]),
             diagnosis_slug=str(metadata["diagnosis_slug"]),
             source_url=str(metadata["source_url"]),
-            passage=str(result["documents"][0]),
-            similarity=float(result["distances"][0]),
+            passage=str(result["documents"][selected_position]),
+            similarity=float(result["distances"][selected_position]),
         )
     }
 

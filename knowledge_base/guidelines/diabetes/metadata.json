@@ -1,10 +1,42 @@
 {
   "diagnosis": "Diabetes mellitus",
-  "synonyms": ["diabetes", "diabetes mellitus", "DM"],
-  "source_name": "MedlinePlus Health Topics",
-  "source_url": "https://medlineplus.gov/diabetes.html",
-  "retrieval_url": "https://wsearch.nlm.nih.gov/ws/query?db=healthTopics&term=title%3Adiabetes&retmax=1&rettype=topic&tool=clinical-discharge-intelligence",
-  "date_retrieved": "2026-09-20",
-  "license_terms": "MedlinePlus states that its web service is free of charge and does not require registration or licensing. Applications using the data must identify MedlinePlus.gov as the source and must not imply MedlinePlus endorsement or use its logo.",
-  "content_scope": "Patient and family health information for prototype reference retrieval; not a substitute for professional medical advice or a clinical practice guideline."
+  "synonyms": ["diabetes", "diabetes mellitus", "type 1 diabetes", "type 2 diabetes", "DM"],
+  "documents": [
+    {
+      "filename": "1726567245_diabetes_mellitus_type_2.pdf",
+      "title": "Standard Treatment Workflow (STW) Diabetes Mellitus Type 2",
+      "source_name": "Indian Council of Medical Research / Department of Health Research, Ministry of Health and Family Welfare, Government of India",
+      "source_url": "https://stw.icmr.org.in/",
+      "retrieval_date": "2026-09-23",
+      "diagnosis": "Type 2 diabetes mellitus",
+      "text_extractability": "Extractable text confirmed with pypdf; 1 page; the page identifies the ICMR Standard Treatment Workflow for type 2 diabetes.",
+      "license_terms": "The PDF states that it is copyright Department of Health Research, Ministry of Health and Family Welfare, Government of India. No separate reuse or redistribution permission was found.",
+      "problem": null,
+      "phase_2_ready": true
+    },
+    {
+      "filename": "ICMR_GuidelinesType2diabetes2018_0.pdf",
+      "title": "ICMR Guidelines for Management of Type 2 Diabetes 2018",
+      "source_name": "Indian Council of Medical Research",
+      "source_url": "https://main.icmr.nic.in/",
+      "retrieval_date": "2026-09-23",
+      "diagnosis": "Type 2 diabetes mellitus",
+      "text_extractability": "Extractable text confirmed with pypdf; 82 pages; the contents and title identify type 2 diabetes management guidance.",
+      "license_terms": "The PDF identifies the Indian Council of Medical Research as the publisher. No explicit reuse or redistribution license was found; permission should be confirmed before public redistribution.",
+      "problem": null,
+      "phase_2_ready": true
+    },
+    {
+      "filename": "ICMR_Guidelines_for_Management_of_Type_1_Diabetes.pdf",
+      "title": "Guidelines for Management of Type 1 Diabetes",
+      "source_name": "Indian Council of Medical Research",
+      "source_url": "https://main.icmr.nic.in/",
+      "retrieval_date": "2026-09-23",
+      "diagnosis": "Type 1 diabetes mellitus",
+      "text_extractability": "Extractable text confirmed with pypdf and regenerated Markdown; 173 pages; the title and opening matter identify type 1 diabetes management guidance. Replacement-character check passed.",
+      "license_terms": "The PDF states Copyright 2022 ICMR, New Delhi, and says no part may be reproduced or used without prior written permission of the copyright owner.",
+      "problem": null,
+      "phase_2_ready": true
+    }
+  ]
 }

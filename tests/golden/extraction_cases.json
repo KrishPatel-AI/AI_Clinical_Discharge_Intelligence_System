@@ -1,0 +1,22 @@
+[
+  {
+    "name": "asthma discharge summary",
+    "document": "Diagnosis: Asthma\nMedication: Salbutamol inhaler\nFollow-up: Review in 7 days\nWarning signs: Worsening breathing",
+    "expected": {
+      "diagnosis": "Asthma",
+      "medications": ["Salbutamol inhaler"],
+      "follow_up_requirements": ["Review in 7 days"],
+      "warning_signs": ["Worsening breathing"]
+    }
+  },
+  {
+    "name": "diabetes discharge summary",
+    "document": "Diagnosis: Type 2 diabetes mellitus\nMedication: Metformin\nFollow-up: Diabetes clinic in 2 weeks\nWarning signs: Persistent vomiting",
+    "expected": {
+      "diagnosis": "Type 2 diabetes mellitus",
+      "medications": ["Metformin"],
+      "follow_up_requirements": ["Diabetes clinic in 2 weeks"],
+      "warning_signs": ["Persistent vomiting"]
+    }
+  }
+]

@@ -108,3 +108,64 @@ def test_report_and_decision_routes_reject_missing_records() -> None:
         json={"decision": "accepted"},
     )
     assert response.status_code == 404
+
+
+def test_live_review_endpoints_support_status_preview_and_history(
+    monkeypatch: pytest.MonkeyPatch,
+    index_dir: Path,
+    database: Session,
+) -> None:
+    class FakeProvider:
+        def extract_discharge(self, text: str) -> DischargeExtraction:
+            return DischargeExtraction(diagnosis="Asthma")
+
+    def override_get_db() -> Generator[Session, None, None]:
+        yield database
+
+    monkeypatch.setattr(
+        discharge,
+        "review_extraction",
+        lambda extraction: run_review(extraction, index_dir),
+    )
+    app.dependency_overrides[get_db] = override_get_db
+    app.dependency_overrides[get_llm_provider] = FakeProvider
+    try:
+        client = TestClient(app)
+        created = client.post(
+            "/reviews",
+            files={"file": ("summary.txt", b"Live asthma review", "text/plain")},
+        )
+        assert created.status_code == 200
+        report_id = created.json()["report_id"]
+        suggestion_id = created.json()["suggestions"][0]["suggestion_id"]
+
+        fetched = client.get(f"/reviews/{report_id}")
+        assert fetched.status_code == 200
+        assert fetched.json()["suggestions"][0]["status"] == "pending"
+
+        updated = client.patch(
+            f"/reviews/{report_id}/suggestions/{suggestion_id}",
+            json={"status": "accepted"},
+        )
+        assert updated.status_code == 200
+        assert updated.json()["suggestions"][0]["status"] == "accepted"
+        assert updated.json()["audit_logs"]
+
+        for output_format in ("txt", "pdf", "docx"):
+            preview = client.get(
+                f"/reviews/{report_id}/preview", params={"format": output_format}
+            )
+            assert preview.status_code == 200
+            assert preview.json()["format"] == output_format
+            assert preview.json()["content"] == "Live asthma review"
+            assert preview.json()["exported"] is False
+
+        history = client.get(
+            "/reviews",
+            params={"search": "Asthma", "group_by": "diagnosis"},
+        )
+        assert history.status_code == 200
+        assert history.json()["total"] == 1
+        assert history.json()["groups"]["Asthma"] == [report_id]
+    finally:
+        app.dependency_overrides.clear()
