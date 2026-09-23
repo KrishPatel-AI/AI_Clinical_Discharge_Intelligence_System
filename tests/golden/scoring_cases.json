@@ -1,0 +1,33 @@
+[
+  {
+    "name": "complete asthma extraction",
+    "extraction": {
+      "diagnosis": "Asthma",
+      "medications": ["Asthma"],
+      "follow_up_requirements": ["Asthma"],
+      "warning_signs": ["Asthma"]
+    },
+    "expected_score": 100,
+    "expected_suggestion_sections": []
+  },
+  {
+    "name": "asthma diagnosis only",
+    "extraction": {
+      "diagnosis": "Asthma"
+    },
+    "expected_score": 25,
+    "expected_suggestion_sections": [
+      "medications",
+      "follow_up_requirements",
+      "warning_signs"
+    ]
+  },
+  {
+    "name": "unknown diagnosis guardrail",
+    "extraction": {
+      "diagnosis": "Rare unrelated diagnosis"
+    },
+    "expected_score": null,
+    "expected_suggestion_sections": []
+  }
+]

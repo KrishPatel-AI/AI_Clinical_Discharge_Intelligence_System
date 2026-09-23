@@ -1,10 +1,30 @@
 {
   "diagnosis": "High blood pressure",
   "synonyms": ["high blood pressure", "hypertension", "HBP", "HTN"],
-  "source_name": "MedlinePlus Health Topics",
-  "source_url": "https://medlineplus.gov/highbloodpressure.html",
-  "retrieval_url": "https://wsearch.nlm.nih.gov/ws/query?db=healthTopics&term=title%3A%22high+blood+pressure%22&retmax=1&rettype=topic&tool=clinical-discharge-intelligence",
-  "date_retrieved": "2026-09-20",
-  "license_terms": "MedlinePlus states that its web service is free of charge and does not require registration or licensing. Applications using the data must identify MedlinePlus.gov as the source and must not imply MedlinePlus endorsement or use its logo.",
-  "content_scope": "Patient and family health information for prototype reference retrieval; not a substitute for professional medical advice or a clinical practice guideline."
+  "documents": [
+    {
+      "filename": "1778941063_hypertensioninadults_final.pdf",
+      "title": "Standard Treatment Workflow (STW) Hypertension in Adults",
+      "source_name": "Indian Council of Medical Research / Department of Health Research, Ministry of Health and Family Welfare, Government of India",
+      "source_url": "https://stw.icmr.org.in/",
+      "retrieval_date": "2026-09-23",
+      "diagnosis": "Hypertension in adults",
+      "text_extractability": "Extractable text confirmed with pypdf; 1 page; the page identifies the ICMR Standard Treatment Workflow for hypertension in adults.",
+      "license_terms": "The PDF states that it is copyright Indian Council of Medical Research and Department of Health Research, Ministry of Health and Family Welfare, Government of India. No separate reuse or redistribution permission was found.",
+      "problem": null,
+      "phase_2_ready": true
+    },
+    {
+      "filename": "Hypertension_0.pdf",
+      "title": "Hypertension: Screening, Diagnosis, Assessment, and Management of Primary Hypertension in Adults in India",
+      "source_name": "Ministry of Health and Family Welfare, Government of India",
+      "source_url": "https://nhm.gov.in/",
+      "retrieval_date": "2026-09-23",
+      "diagnosis": "Primary hypertension in adults",
+      "text_extractability": "Extractable text confirmed with pypdf; 144 pages; the opening pages identify the Indian adult hypertension screening, diagnosis, assessment, and management guideline.",
+      "license_terms": "No explicit reuse or open license was found in the PDF. Government publication reuse terms must be confirmed before public redistribution.",
+      "problem": null,
+      "phase_2_ready": true
+    }
+  ]
 }

@@ -73,6 +73,27 @@ def test_review_reports_no_match_without_comparisons(index_dir: Path) -> None:
     assert "No matching guideline" in result.message
 
 
+@pytest.mark.parametrize(
+    ("diagnosis", "diagnosis_slug"),
+    [
+        ("Asthma", "asthma"),
+        ("Type 1 diabetes mellitus", "diabetes"),
+        ("Hypertension in adults", "high-blood-pressure"),
+    ],
+)
+def test_review_retrieves_each_indexed_diagnosis(
+    index_dir: Path, diagnosis: str, diagnosis_slug: str
+) -> None:
+    result = review_extraction(DischargeExtraction(diagnosis=diagnosis), index_dir)
+
+    assert result.status == "matched"
+    assert result.guideline is not None
+    assert result.guideline.diagnosis_slug == diagnosis_slug
+    assert result.guideline.source_url
+    assert result.guideline.passage
+    assert all(item.guideline_passage for item in result.comparisons)
+
+
 def test_review_endpoint_returns_workflow_result(
     monkeypatch: pytest.MonkeyPatch, index_dir: Path
 ) -> None:

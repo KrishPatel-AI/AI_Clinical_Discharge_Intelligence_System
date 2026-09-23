@@ -71,6 +71,12 @@ class DecisionRequest(BaseModel):
     decision: Literal["accepted", "ignored"]
 
 
+class SuggestionStatusRequest(BaseModel):
+    """A live review status update for one suggestion."""
+
+    status: Literal["pending", "accepted", "rejected"]
+
+
 class AuditLogResponse(BaseModel):
     """One persisted doctor decision."""
 
@@ -88,6 +94,7 @@ class PersistedSuggestion(BaseModel):
     explanation: str
     guideline_passage: str
     source_url: str
+    status: Literal["pending", "accepted", "rejected"] = "pending"
     decision: Literal["accepted", "ignored"] | None = None
     decided_at: str | None = None
 
@@ -104,3 +111,22 @@ class PersistedReportResponse(BaseModel):
     created_at: str
     suggestions: list[PersistedSuggestion] = Field(default_factory=list)
     audit_logs: list[AuditLogResponse] = Field(default_factory=list)
+
+
+class PreviewResponse(BaseModel):
+    """Preview-safe current document representation."""
+
+    report_id: int
+    format: Literal["pdf", "docx", "txt"]
+    content: str
+    exported: bool = False
+
+
+class ReviewHistoryResponse(BaseModel):
+    """Server-filtered review history for frontend consumption."""
+
+    reviews: list[PersistedReportResponse] = Field(default_factory=list)
+    total: int
+    offset: int
+    limit: int
+    groups: dict[str, list[int]] | None = None
