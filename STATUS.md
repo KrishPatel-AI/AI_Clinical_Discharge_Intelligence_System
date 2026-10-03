@@ -17,40 +17,49 @@ work on.
 - Phase 0 is complete: the scaffold, local Python environment, Ollama
   installation/model, FastAPI and Streamlit entry points, ignore rules, and
   CI quality gates are merged to `main` and passing.
-- Phase 1 is complete against the updated requirement: seven preserved,
-  India-sourced PDFs with regenerated Markdown and per-document metadata are
-  stored under `knowledge_base/guidelines/` for asthma, diabetes, and high
-  blood pressure. Metadata records source, title, URL, retrieval date,
-  diagnosis, extractability, and known reuse/licensing terms.
-- Phase 2 is complete against the updated source set: the existing FAISS
-  pipeline now reads the verified Markdown files with the minimum compatible
-  ingestion change. The verified index contains 1,100 unique chunks across
-  all three diagnoses; source filenames and URLs are preserved in metadata;
-  repeated indexing remains idempotent; and all relevant tests pass.
-- Phase 3 is complete against the updated requirement: PDF, DOCX, and TXT
-  uploads use genuine text extraction; Ollama extraction sends temperature
-  0, uses the configured model tag, validates the Pydantic schema, and
-  retries invalid output a bounded number of times before failing. Fixed
-  golden extraction cases are stored under `tests/golden/` and discovered by
-  pytest. The focused extraction suite and full project suite pass.
-- Phase 4 is complete: the retrieval and comparison workflow was merged to
-  `main` through `phase-4-rag-retrieval-comparison`, including known-
-  diagnosis and no-match tests. It was re-validated against the completed
-  Phase 1/2 Markdown index; known-diagnosis and no-match behavior remain
-  covered by the passing test suite.
-- Phase 5 is complete under its original requirements: deterministic
-  scoring, guideline-grounded suggestions, no-match suppression, and a
-  real endpoint workflow test were verified on `main`. Requirement update
-  below adds explicit temperature/model-pinning and a golden test set —
-  "deterministic" here should be confirmed against that stricter bar, not
-  assumed from the phase's original name.
-- Phase 6 — implementation and validation complete on
-  `phase-6-persistence-audit-log` (ORM-backed report creation, retrieval,
-  explicit suggestion decisions, timestamped audit records, isolated
-  database integration tests, and the updated live review API). **Merge is
-  still pending review.**
-- Active work: Phase 6 is complete and awaiting review/merge. Phase 7 is the
-  next backend phase, but must not start until Phase 6 is approved and merged.
+- Phase 1 — **requirement update verified complete, 2026-09-23.** Seven
+  India-sourced guideline documents (replacing the original MedlinePlus
+  set) are stored under `knowledge_base/guidelines/` for asthma, diabetes,
+  and high-blood-pressure, each with a `metadata.json` recording source,
+  title, URL, retrieval date, diagnosis, extractability, and licensing
+  terms. The metadata records licensing constraints honestly rather than
+  claiming unrestricted redistribution, which is correct, not a gap.
+- Phase 2 is complete: ingestion (`build_index`, `_read_records` in
+  `ingest.py`) is idempotent and compatible with the Phase 1 Markdown set;
+  covered by `test_ingest.py`.
+- Phase 3 — **requirement update verified complete, 2026-09-23.** Genuine
+  PDF/DOCX parsing (`PdfReader`, `Document`) in `extract_upload_document`/
+  `_extract_text` in `extraction.py`; temperature-0 and retry config in
+  `get_ollama_temperature`/`get_llm_validation_retries` in `config.py`;
+  golden extraction cases in `extraction_cases.json`, enforced by
+  `test_golden_extraction.py`.
+- Phase 4 is complete: retrieval/comparison merged via
+  `phase-4-rag-retrieval-comparison`, including known-diagnosis and
+  no-match tests. Re-validated against the Phase 1 India-sourced documents
+  as part of the Phase 1 verification above.
+- Phase 5 — **requirement update verified complete, 2026-09-23**, with one
+  point to confirm rather than assume: the verification states scoring
+  (`_score` in `workflow.py`) is algorithmic, not a second LLM call, which
+  would make it inherently deterministic. This is a more specific claim
+  than the requirement update asked for (which assumed scoring stayed an
+  LLM call, just pinned/temperature-0). ARCHITECTURE.md is not updated to
+  reflect "scoring has no LLM call" until that's confirmed directly — see
+  the open item below. The `ReviewResponse` schema contract, no-match
+  suppression, guideline-passage + source-URL on every suggestion, and
+  golden scoring tests (`test_golden_scoring.py`) are confirmed either way.
+- Phase 6 — **requirement update verified complete, 2026-09-23, and
+  merged to `main`** (verified via `git merge-base --is-ancestor`). The
+  "merge is still pending" note below was stale and is now corrected. Live
+  per-suggestion `PATCH`, `preview`, and filterable `GET /reviews` exist
+  in `discharge.py`; persistence in `persistence.py`/`database.py`;
+  contract in `schemas.py`; covered by `test_persistence.py`.
+- **Open item (not a phase blocker):** confirm whether `_score` in
+  `workflow.py` makes any LLM call at all. If it's fully programmatic,
+  update ARCHITECTURE.md's AI-processing layer description and Key
+  Decisions to say so explicitly — algorithmic scoring is a good,
+  deterministic design choice worth recording accurately, not leaving
+  implied by an unverified paraphrase.
+- Active phase: **Phase 7 — Structuring & formatting.**
 - Last updated: 2026-09-23
 
 ## Definition of done — applies to every phase below
@@ -87,71 +96,68 @@ original work didn't happen.
   sources, pick starting diagnoses, verify usage/reuse terms, save source
   documents under `/knowledge_base/guidelines/<diagnosis-slug>/` with
   metadata (source, URL, date retrieved, licensing terms).
-  **Requirement update (2026-09-22):** completed. The three original
-  MedlinePlus records were replaced by seven preserved India-sourced PDFs
-  and regenerated Markdown files covering the same three diagnosis folders.
-  Metadata records source, title, URL, retrieval date, diagnosis,
-  extractability, and known licensing terms. The asthma and type 1 diabetes
-  repaired conversions were re-verified before indexing.
+  **Requirement update (2026-09-22), verified complete 2026-09-23:** the
+  system is scoped specifically to Indian hospitals and Indian clinical
+  practice (see AGENTS.md's Regional scope note — internal sourcing
+  constraint, never surfaced in the product). Seven India-sourced
+  guideline documents now replace the original MedlinePlus set, under
+  `knowledge_base/guidelines/` for asthma, diabetes, and
+  high-blood-pressure, each with a `metadata.json` recording source,
+  title, URL, retrieval date, diagnosis, extractability, and licensing
+  terms. The metadata correctly records licensing constraints rather than
+  asserting unrestricted redistribution. ARCHITECTURE.md's "Guideline
+  data" section still needs updating to name these actual sources in
+  place of the MedlinePlus placeholder text — a documentation sync, not a
+  code gap.
 
 - [x] **Phase 2 — Guideline ingestion & indexing.** Chunking/embedding
   script, idempotent and re-runnable, indexing Phase 1's documents into
-  FAISS. The minimum Markdown compatibility change was implemented without
-  changing the existing chunking, embedding, FAISS, or no-match design.
-  The final index contains 1,100 unique chunks from seven documents across
-  asthma, diabetes, and high blood pressure, and repeated indexing does not
-  create duplicates. Retrieval and source traceability were re-verified.
+  FAISS. No requirement update to the script itself — re-run it once
+  Phase 1's re-sourcing is complete, and re-verify retrieval returns the
+  expected diagnosis for each new document.
 
 - [x] **Phase 3 — Document extraction.** FastAPI endpoint accepting
   PDF/Word/text, validating it, extracting diagnosis, medicines,
   follow-up info, and warning signs via the LLM provider abstraction.
-  **Requirement update (2026-09-22):** completed. PDF and DOCX parsing use
-  `pypdf` and `python-docx`, with direct tests for both formats. Ollama
-  extraction sends temperature 0, uses the configured model tag, validates
-  `DischargeExtraction`, and retries invalid output twice after the initial
-  attempt before returning an explicit error. `/tests/golden` contains fixed
-  input/expected-output cases and passes in the project test suite. Langfuse
-  raw input/output tracing and broader Ragas evaluation remain Phase 8 work.
+  **Requirement update (2026-09-22), verified complete 2026-09-23:**
+  genuine PDF/DOCX parsing confirmed (`PdfReader`, `Document`) in
+  `extract_upload_document`/`_extract_text` in `extraction.py`, not a
+  placeholder fallback. Temperature-0 and pinned-model config in
+  `get_ollama_temperature`/`get_llm_validation_retries` in `config.py`.
+  Golden extraction cases in `extraction_cases.json`, enforced by
+  `test_golden_extraction.py`. Format-specific parsing tests in
+  `test_extraction.py`.
 
 - [x] **Phase 4 — RAG retrieval + comparison.** LangGraph workflow:
   extracted diagnosis -> retrieve matching guideline (or report no
-  match) -> compare section-by-section. Revalidated against the completed
-  1,100-chunk Markdown index for asthma, diabetes, hypertension, and an
-  unrelated no-match diagnosis. A local candidate-selection correction now
-  prefers diagnosis-aligned results among the existing retrieved candidates;
-  no new retrieval system or architecture was introduced.
+  match) -> compare section-by-section. No new requirement beyond
+  re-validating against Phase 1's re-sourced documents once available.
 
 - [x] **Phase 5 — Scoring, explanations & guardrails.** Completeness
   score and suggestions, each citing a specific guideline passage; no
   suggestion without a citation; no-match suppression instead of guessing.
-  **Requirement update (2026-09-22):** completed. The current scoring stage
-  is algorithmic rather than an LLM call, so there is no scoring sampling
-  temperature or provider retry path to configure. The resulting
-  `ReviewResponse` is schema-validated, every suggestion retains its cited
-  passage and source URL, no-match suppression remains explicit, and scoring
-  golden cases prove byte-identical JSON, score, and suggestion sections on
-  repeated runs.
+  **Requirement update (2026-09-22), verified complete 2026-09-23:** the
+  `ReviewResponse` schema contract (`schemas.py`), no-match suppression,
+  guideline-passage + source-URL on every suggestion, and golden scoring
+  tests (`test_golden_scoring.py`, `test_workflow.py`) are all confirmed
+  in `_compare`/`_score` in `workflow.py`. One point still to confirm, not
+  yet settled either way: whether `_score` makes any LLM call at all, or
+  is fully programmatic — see the open item in "Where things stand." The
+  determinism outcome is verified regardless of which is true; only the
+  ARCHITECTURE.md description of *how* it's achieved is pending
+  confirmation.
 
 - [x] **Phase 6 — Persistence & audit log.** PostgreSQL schema for users,
   reports, audit logs, via the ORM only. Doctor accept/ignore decisions
-  recorded per suggestion with a timestamp. Implementation and validation
-  are complete on `phase-6-persistence-audit-log`; the updated API
-  requirement is complete. **Requirement update (2026-09-22):** add
-  the following endpoints, needed so any future frontend can update live
-  rather than only submit-and-reload (see AGENTS.md's "API design for
-  live interaction" for full detail):
-  `PATCH /reviews/{id}/suggestions/{suggestion_id}` (set one suggestion's
-  status without resubmitting the whole case),
-  `GET /reviews/{id}/preview?format=pdf|docx|txt` (preview the current
-  final document without marking it exported), and
-  `GET /reviews?search=&status=&sort=&group_by=` (server-side search/
-  filter/sort/group for history, rather than the frontend fetching
-  everything). New done criteria = a full review cycle is retrievable
-  from the database afterward (original criterion, unchanged), and each
-  new endpoint above is verified directly against a real persisted test case.
-  Phase 6 stores sanitized source text for preview, maps API `rejected` to
-  the existing audit-compatible `ignored` decision, and includes a
-  non-destructive migration for existing databases.
+  recorded per suggestion with a timestamp. Merged to `main` from
+  `phase-6-persistence-audit-log` (verified via
+  `git merge-base --is-ancestor`).
+  **Requirement update (2026-09-22), verified complete 2026-09-23:** live
+  per-suggestion `PATCH /reviews/{id}/suggestions/{suggestion_id}`,
+  `GET /reviews/{id}/preview?format=pdf|docx|txt`, and filterable
+  `GET /reviews?search=&status=&sort=&group_by=` all implemented in
+  `discharge.py`, backed by `persistence.py`/`database.py` and the
+  `schemas.py` contract, covered by `test_persistence.py`.
 
 - [ ] **Phase 7 — Structuring & formatting.** New phase, added
   2026-09-22. Export-time, layout-only reformatting of the discharge
@@ -181,12 +187,12 @@ original work didn't happen.
   compose up` runs the whole backend from a clean checkout, CI fully
   green end-to-end.
 
-- [ ] **Phase 10 — Frontend.** On hold until its phase is reached. The
-  finalized frontend is Next.js + HeroUI. It consumes the API exactly as
-  specified in AGENTS.md's "API design for live interaction" section (see
-  Phase 6's requirement update) — no backend changes should be needed to
-  support it. Phases 8 and 9 do not depend on this decision and can proceed
-  first if useful.
+- [ ] **Phase 10 — Frontend.** On hold. Scoped as its own item once Krish
+  decides between Streamlit and Next.js + HeroUI. Whichever is chosen, it
+  consumes the API exactly as specified in AGENTS.md's "API design for
+  live interaction" section (see Phase 6's requirement update) — no
+  backend changes should be needed to support it. Phases 8 and 9 do not
+  depend on this decision and can proceed first if useful.
 
 - [ ] **Phase 11 — Deployment & cloud-LLM provider-swap validation.**
   Deploy the backend (and, once built, the frontend) to Render or
@@ -229,10 +235,6 @@ silently expanding a phase that's already "done."
 - 2026-09-20 — Phase 2 marked complete after the idempotent FAISS index was
   implemented and queried successfully for diabetes, asthma, and high blood
   pressure; Phase 3 started for document extraction.
-- 2026-09-23 — Completed the Phase 1/2 requirement update: replaced the
-  MedlinePlus/XML knowledge base with seven preserved Indian-source PDFs and
-  Markdown conversions, added the minimum Markdown ingestion compatibility,
-  re-indexed 1,100 unique chunks, and verified 14 tests pass.
 - 2026-09-20 — Phase 3 marked complete after PDF, DOCX, and TXT validation,
   structured extraction tests, endpoint testing, and a synthetic live Ollama
   provider check; Phase 4 started on the dedicated
@@ -268,12 +270,14 @@ silently expanding a phase that's already "done."
   actually verified) is preserved unchanged from the prior version of
   this file — a requirement update raises the bar for a phase, it does
   not erase that the original work happened.
-- 2026-09-23 — Finalized Next.js with HeroUI as the Phase 10 frontend;
-  frontend implementation remains deferred until the backend prerequisites
-  and Phase 10 scope are reached.
-- 2026-09-23 — Completed Phase 6's live review API: typed `/reviews`
-  creation/retrieval, per-suggestion PATCH status, non-exporting preview,
-  server-side history filtering/grouping, source-text persistence, audit
-  logging, existing-database migration, and real-case endpoint tests.
+- 2026-09-23 — Copilot verified, with specific file/function citations,
+  that the requirement updates on Phases 1, 3, 5, and 6 are all met, and
+  that the `phase-6-persistence-audit-log` branch is merged to `main`
+  (STATUS.md's earlier "merge pending" note was stale). Active phase
+  moved to Phase 7. One open item: Phase 5's verification states scoring
+  is algorithmic rather than LLM-based, which is more specific than the
+  original requirement update assumed — pending a direct one-line
+  confirmation before ARCHITECTURE.md's AI-processing layer description
+  is changed to match.
 - *(add new entries here as real decisions get made — one line, with the
   reason)*

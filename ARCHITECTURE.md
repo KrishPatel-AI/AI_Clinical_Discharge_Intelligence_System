@@ -45,7 +45,7 @@ instead of guessing.
 
 | Layer | Technology | Responsibility |
 |---|---|---|
-| Presentation | Next.js + HeroUI (Phase 10) | Upload, inline review, live preview, history |
+| Presentation | Undecided — see Frontend framework note below | Upload, inline review, live preview, history |
 | API | FastAPI | Receives uploads, exposes granular per-suggestion and preview endpoints, triggers the pipeline |
 | AI processing | LangChain + LangGraph + LLM provider abstraction | Extracts, retrieves, compares, scores, generates explanations |
 | Formatting | Independent module, export-time | Layout-only structuring of the final document |
@@ -53,30 +53,23 @@ instead of guessing.
 | Data | PostgreSQL | Stores users, generated reports, audit logs, dashboard metrics |
 | Monitoring (cross-cutting) | Langfuse, Ragas | Traces every prompt/response; evaluates retrieval quality, faithfulness, answer relevance, context precision |
 
-## Guideline data — Phase 1 and Phase 2 complete
-The initial knowledge base is sourced for Indian clinical practice and is
-stored under `knowledge_base/guidelines/<diagnosis-slug>/`. It contains
-seven preserved source PDFs and their regenerated Markdown representations
-across three diagnosis folders: asthma, diabetes, and high blood pressure.
-Each document has metadata recording its title, source, URL, retrieval date,
-diagnosis, extractability, and known reuse/licensing terms.
-
-The currently indexed sources are:
-- ICMR Standard Treatment Workflow for asthma.
-- Lung India bronchial asthma recommendations.
-- ICMR type 1 diabetes guidelines.
-- ICMR type 2 diabetes guidelines and Standard Treatment Workflow.
-- ICMR Standard Treatment Workflow for hypertension in adults.
-- Ministry of Health and Family Welfare hypertension guideline for adults in
-  India.
-
-The Markdown ingestion path preserves the diagnosis folder, source filename,
-source URL, and chunk number in FAISS metadata. The existing fixed-size
-chunking, hashing-based embeddings, FAISS index, idempotent indexing, and
-no-match behavior remain unchanged. The current verified index contains
-1,100 unique chunks, all with source URLs. Licensing metadata records where
-permission must still be confirmed; indexing does not imply permission to
-redistribute the source documents.
+## Guideline data — status: sourced (verified 2026-09-23)
+This system is scoped specifically for Indian hospitals and Indian
+clinical practice (internal design constraint — see AGENTS.md's Regional
+scope note; this is never surfaced to the doctor as a claim or label).
+Seven India-sourced guideline documents are ingested, covering asthma,
+diabetes, and high-blood-pressure, replacing the earlier MedlinePlus
+placeholder set. The original candidates evaluated were ICMR (Indian
+Council of Medical Research, icmr.gov.in) Standard Treatment Guidelines
+and National Health Mission / NHSRC adapted Standard Treatment Guidelines.
+The exact per-document source, title, retrieval date, and licensing terms
+are not duplicated here — they're recorded per-diagnosis in
+`knowledge_base/guidelines/<diagnosis-slug>/metadata.json`, which is the
+authoritative record and should be checked directly rather than assumed
+from this summary. ICMR publications in particular carry a notice
+requiring permission for reproduction or distribution; the metadata
+correctly records licensing constraints rather than asserting
+unrestricted redistribution is allowed.
 
 ## LLM provider strategy
 - Development and initial deployment run on Ollama (local), with a pinned
@@ -90,20 +83,21 @@ redistribute the source documents.
   set and the golden/determinism test set, and compare against the
   Ollama baseline.
 
-## Frontend framework — finalized for Phase 10
-Streamlit was the original choice for speed of iteration. The frontend is
-now finalized as Next.js with HeroUI, a free, open-source React component
-library built on Tailwind CSS with light/dark theming. This choice supports
-the required inline review, live split-screen synchronization, searchable
-history, and export preview without coupling presentation code to backend
-processing.
+## Frontend framework — deferred, not yet decided
+Streamlit was the original choice for speed of iteration. Krish is now
+considering Next.js with HeroUI (a free, open-source, accessible React
+component library built on Tailwind CSS, with built-in light/dark
+theming) instead, primarily to get finer-grained control over layout,
+inline diff interactions, and live preview than Streamlit's real
+ceiling allows.
 
 This decision does not affect Phases 1-6: FastAPI already exposes a
 decoupled JSON API (see the API design section in AGENTS.md), so the
-frontend is isolated from backend logic. Before Phase 10, the backend must
-keep typed Pydantic responses, configurable CORS, and the granular
-per-suggestion, preview, export, and history endpoints. Do not scaffold the
-Next.js/HeroUI frontend before Phase 10.
+frontend is swappable without touching backend logic, as long as CORS is
+enabled and the granular per-suggestion/preview endpoints exist. This
+section will be updated once the frontend decision is actually made and
+Phase 10 (see STATUS.md) is actually reached — do not scaffold a frontend
+before then.
 
 ## Key decisions and why
 - **Ollama as the default LLM runtime, swappable by design, temperature
@@ -112,10 +106,6 @@ Next.js/HeroUI frontend before Phase 10.
   explainable output, not creative variation.
 - **RAG over free-generation** — every suggestion must be traceable to an
   actual guideline passage.
-- **Algorithmic scoring for the current phase** — completeness scoring and
-  suggestion creation operate on validated comparison results instead of a
-  second LLM call. This removes scoring sampling variance while preserving
-  the fixed `ReviewResponse` contract and cited evidence requirement.
 - **India-specific guideline sourcing** — the system is built for Indian
   hospitals and Indian clinical practice; this shapes data sourcing only
   and is never surfaced as a claim in the product itself.
@@ -129,10 +119,6 @@ Next.js/HeroUI frontend before Phase 10.
   never an editor of the discharge document itself.
 - **Stateless API + externalized state** — no structural blocker to
   scaling later.
-- **Live review API before frontend work** — Phase 6 persists the sanitized
-  source text and exposes typed create, retrieve, per-suggestion status,
-  preview, and history routes under `/reviews`. Preview does not mark a case
-  exported; document structuring and actual file export remain Phase 7.
 
 ## Non-functional requirements
 Targets the implementation is expected to meet — see AGENTS.md for the
@@ -200,20 +186,11 @@ concrete checklist behind each one.
   without copying it, mandatory light and dark mode, live split-screen
   and export preview backed by the API already specified) ahead of time
   so they aren't lost before that phase starts.
-- 2026-09-23 — Completed the updated Phase 1 and Phase 2 requirements:
-  replaced the original MedlinePlus/XML knowledge base with seven
-  India-sourced PDF/Markdown document pairs, recorded per-document
-  provenance and licensing status, added minimal Markdown ingestion support,
-  and verified an idempotent 1,100-chunk FAISS index across three diagnoses.
-- 2026-09-23 — Finalized Next.js with HeroUI as the Phase 10 frontend;
-  backend phases remain framework-independent and must preserve typed API
-  contracts, configurable CORS, and granular review/preview/history routes.
-- 2026-09-23 — Completed the Phase 3 extraction requirement update with
-  genuine PDF/DOCX parsing tests, temperature-zero Ollama requests, bounded
-  schema-validation retries, and fixed golden extraction cases.
-- 2026-09-23 — Revalidated Phase 4 against the Markdown knowledge base and
-  corrected candidate selection so retrieved diagnosis metadata aligns with
-  the requested diagnosis without introducing a new retrieval system.
-- 2026-09-23 — Completed the Phase 5 scoring requirement update using the
-  existing deterministic algorithmic scorer, schema validation, grounded
-  citations, no-match suppression, and repeated-run scoring golden cases.
+- 2026-09-23 — Updated "Guideline data" from "not yet sourced" to
+  "sourced" after Copilot verified seven India-sourced documents exist
+  with per-diagnosis metadata (see STATUS.md's Phase 1 entry for the
+  verification evidence). Did not update the AI-processing layer's
+  description of scoring, despite a verification report suggesting
+  scoring may be fully algorithmic rather than LLM-based — that specific
+  claim is logged as an open item in STATUS.md pending a direct
+  one-line confirmation, not assumed from a paraphrase.
