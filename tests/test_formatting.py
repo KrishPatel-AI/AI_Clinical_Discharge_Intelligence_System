@@ -1,5 +1,9 @@
+from io import BytesIO
+
 import pytest
+from docx import Document
 from fastapi.testclient import TestClient
+from pypdf import PdfReader
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
@@ -72,7 +76,7 @@ def test_verify_content_presence_detects_missing_sentence() -> None:
     assert verify_content_presence(original, structured) is False
 
 
-def test_export_route_formats_content_and_marks_exported(
+def test_preview_returns_source_text_without_recording_export(
     monkeypatch, index_dir, database: Session
 ) -> None:
     class FakeProvider:
@@ -104,11 +108,89 @@ def test_export_route_formats_content_and_marks_exported(
             )
             assert patch.status_code == 200
 
-        exported = TestClient(app).post(f"/reviews/{report_id}/export", params={"format": "txt"})
+        preview = TestClient(app).get(
+            f"/reviews/{report_id}/preview", params={"format": "txt"}
+        )
+        assert preview.status_code == 200
+        body = preview.json()
+        assert body["exported"] is False
+        assert body["content"] == "Patient is 42 years old. Diagnosis is asthma."
+        assert "Patient Information" not in body["content"]
+        assert "Added on review" not in body["content"]
+        stored = database.get(Report, report_id)
+        assert stored is not None
+        assert not any(log.decision == "exported" for log in stored.audit_logs)
+    finally:
+        app.dependency_overrides.clear()
+
+
+@pytest.mark.parametrize(
+    ("output_format", "media_type"),
+    [
+        ("txt", "text/plain"),
+        ("docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"),
+        ("pdf", "application/pdf"),
+    ],
+)
+def test_export_returns_downloadable_file_and_records_export(
+    monkeypatch,
+    index_dir,
+    database: Session,
+    output_format: str,
+    media_type: str,
+) -> None:
+    class FakeProvider:
+        def extract_discharge(self, text: str) -> DischargeExtraction:
+            return DischargeExtraction(diagnosis="Asthma")
+
+    def override_get_db():
+        yield database
+
+    monkeypatch.setattr(
+        discharge,
+        "review_extraction",
+        lambda extraction: __import__("backend.rag.workflow", fromlist=["review_extraction"]).review_extraction(extraction, index_dir),
+    )
+    app.dependency_overrides[get_db] = override_get_db
+    app.dependency_overrides[get_llm_provider] = FakeProvider
+    try:
+        client = TestClient(app)
+        created = client.post(
+            "/reviews",
+            files={"file": ("summary.txt", b"Patient is 42 years old. Diagnosis is asthma.", "text/plain")},
+        )
+        assert created.status_code == 200
+        report_id = created.json()["report_id"]
+        suggestions = created.json()["suggestions"]
+        if suggestions:
+            accepted = client.patch(
+                f"/reviews/{report_id}/suggestions/{suggestions[0]['suggestion_id']}",
+                json={"status": "accepted"},
+            )
+            assert accepted.status_code == 200
+
+        exported = client.post(
+            f"/reviews/{report_id}/export", params={"format": output_format}
+        )
         assert exported.status_code == 200
-        body = exported.json()
-        assert body["exported"] is True
-        assert "Patient Information" in body["content"] or "Diagnosis" in body["content"]
+        assert exported.headers["content-type"].startswith(media_type)
+        assert exported.headers["content-disposition"].endswith(
+            f'"review-{report_id}.{output_format}"'
+        )
+
+        if output_format == "txt":
+            content = exported.content.decode("utf-8")
+        elif output_format == "docx":
+            document = Document(BytesIO(exported.content))
+            content = "\n".join(paragraph.text for paragraph in document.paragraphs)
+        else:
+            content = "\n".join(
+                page.extract_text() or "" for page in PdfReader(BytesIO(exported.content)).pages
+            )
+
+        assert "Patient Information" in content or "Diagnosis" in content
+        assert "Patient is 42 years old." in content
+        assert ("Added on review" in content) == bool(suggestions)
         stored = database.get(Report, report_id)
         assert stored is not None
         assert any(log.decision == "exported" for log in stored.audit_logs)

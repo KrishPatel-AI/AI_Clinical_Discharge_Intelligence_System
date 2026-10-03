@@ -47,7 +47,7 @@ instead of guessing.
 
 | Layer | Technology | Responsibility |
 |---|---|---|
-| Presentation | Undecided — see Frontend framework note below | Upload, inline review, live preview, history |
+| Presentation | Next.js + HeroUI (Phase 10; not yet built) | Upload, inline review, live preview, history |
 | API | FastAPI | Receives uploads, exposes granular per-suggestion and preview endpoints, triggers the pipeline |
 | AI processing | LangChain + LangGraph + LLM provider abstraction | Extracts, retrieves, compares, scores, generates explanations |
 | Formatting | Independent module, export-time | Layout-only structuring of the final document |
@@ -85,21 +85,18 @@ unrestricted redistribution is allowed.
   set and the golden/determinism test set, and compare against the
   Ollama baseline.
 
-## Frontend framework — deferred, not yet decided
-Streamlit was the original choice for speed of iteration. Krish is now
-considering Next.js with HeroUI (a free, open-source, accessible React
-component library built on Tailwind CSS, with built-in light/dark
-theming) instead, primarily to get finer-grained control over layout,
-inline diff interactions, and live preview than Streamlit's real
-ceiling allows.
+## Frontend framework — final decision: Next.js + HeroUI (Phase 10)
+The frontend stack is finalized as Next.js with HeroUI, a free,
+open-source React component library built on Tailwind CSS with built-in
+light/dark theming. This is a Phase 10 decision only, and the frontend is
+not scaffolded or modified before that phase begins.
 
-This decision does not affect Phases 1-6: FastAPI already exposes a
-decoupled JSON API (see the API design section in AGENTS.md), so the
-frontend is swappable without touching backend logic, as long as CORS is
-enabled and the granular per-suggestion/preview endpoints exist. This
-section will be updated once the frontend decision is actually made and
-Phase 10 (see STATUS.md) is actually reached — do not scaffold a frontend
-before then.
+This does not affect Phases 1-7: FastAPI already exposes a decoupled
+JSON API (see the API design section in AGENTS.md), so the frontend is
+swappable without changing backend logic, as long as CORS is enabled and
+the granular per-suggestion/preview endpoints exist. The frontend work is
+still deferred until Phase 10, while the backend remains the active
+implementation track.
 
 ## Key decisions and why
 - **Ollama as the default LLM runtime, swappable by design, temperature

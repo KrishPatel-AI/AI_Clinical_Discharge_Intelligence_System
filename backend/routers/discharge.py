@@ -1,12 +1,16 @@
 """Discharge-summary upload routes."""
 
-from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
+from typing import Literal
+
+from fastapi import APIRouter, Depends, File, HTTPException, Query, Response, UploadFile
 from sqlalchemy.orm import Session
 
 from backend.config import get_ollama_base_url, get_ollama_model
 from backend.db import get_db
+from backend.formatting.export import create_export
 from backend.formatting.structuring import structure_document, verify_content_presence
 from backend.llm.provider import LLMProvider, OllamaProvider
+from backend.models.database import Report
 from backend.models.schemas import (
     DecisionRequest,
     ExtractionResponse,
@@ -134,52 +138,63 @@ def patch_suggestion_status(
     return to_persisted_response(report)
 
 
-@reviews_router.get("/{report_id}/preview", response_model=PreviewResponse)
-def preview_review(
-    report_id: int,
-    format: str = Query(..., pattern="^(pdf|docx|txt)$"),
-    db: Session = DB_DEPENDENCY,
-) -> PreviewResponse:
-    report = find_report(db, report_id)
-    if report is None:
-        raise HTTPException(status_code=404, detail="Review not found.")
-    return PreviewResponse(
-        report_id=report.id,
-        format=format,  # type: ignore[arg-type]
-        content=report.source_text,
-        exported=False,
-    )
-
-
-@reviews_router.post("/{report_id}/export", response_model=PreviewResponse)
-def export_review(
-    report_id: int,
-    format: str = Query(..., pattern="^(pdf|docx|txt)$"),
-    db: Session = DB_DEPENDENCY,
-) -> PreviewResponse:
-    report = find_report(db, report_id)
-    if report is None:
-        raise HTTPException(status_code=404, detail="Review not found.")
-
+def _structured_report_content(report: Report) -> str:
     accepted_suggestions = [
-        suggestion for suggestion in report.suggestions if suggestion.decision == "accepted"
+        suggestion
+        for suggestion in report.suggestions
+        if suggestion.decision == "accepted"
     ]
     structured = structure_document(report.source_text, accepted_suggestions)
     if not verify_content_presence(report.source_text, structured):
         raise HTTPException(
             status_code=500,
-            detail="Structured export dropped original document content; verification failed.",
+            detail="Structured document dropped original content; verification failed.",
         )
+    return structured
+
+
+@reviews_router.get("/{report_id}/preview", response_model=PreviewResponse)
+def preview_review(
+    report_id: int,
+    format: Literal["pdf", "docx", "txt"] = Query(...),
+    db: Session = DB_DEPENDENCY,
+) -> PreviewResponse:
+    report = find_report(db, report_id)
+    if report is None:
+        raise HTTPException(status_code=404, detail="Review not found.")
+    return PreviewResponse(
+        report_id=report.id,
+        format=format,
+        content=report.source_text,
+        exported=False,
+    )
+
+
+@reviews_router.post("/{report_id}/export")
+def export_review(
+    report_id: int,
+    format: Literal["pdf", "docx", "txt"] = Query(...),
+    db: Session = DB_DEPENDENCY,
+) -> Response:
+    report = find_report(db, report_id)
+    if report is None:
+        raise HTTPException(status_code=404, detail="Review not found.")
+
+    structured = _structured_report_content(report)
+    artifact = create_export(structured, format)
 
     export = record_export(db, report_id)
     if export is None:
         raise HTTPException(status_code=404, detail="Review not found.")
 
-    return PreviewResponse(
-        report_id=report.id,
-        format=format,  # type: ignore[arg-type]
-        content=structured,
-        exported=True,
+    return Response(
+        content=artifact.content,
+        media_type=artifact.media_type,
+        headers={
+            "Content-Disposition": (
+                f'attachment; filename="review-{report.id}.{artifact.extension}"'
+            )
+        },
     )
 
 
