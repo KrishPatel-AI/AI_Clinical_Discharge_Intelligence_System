@@ -53,9 +53,10 @@ work on.
   `backend/routers/discharge.py`. The formatter does not rewrite or drop
   original clinical content; it re-labels/reorders original text, adds only
   accepted suggestions under a clearly marked section, and enforces the
-  content-presence verification check before completion. The Phase 7 tests
-  pass and the project lint/test suite remains green.
-- Active phase: **Phase 8 — Evaluation & monitoring, fully wired.**
+  content-presence verification check before completion. The preview route
+  intentionally returns the persisted source text before export so the UI
+  can preview the current document without marking it as exported.
+- Active phase: **Phase 8 — Evaluation & monitoring, next backend work item.**
 - Last updated: 2026-10-03
 
 ## Definition of done — applies to every phase below
@@ -183,12 +184,13 @@ original work didn't happen.
   compose up` runs the whole backend from a clean checkout, CI fully
   green end-to-end.
 
-- [ ] **Phase 10 — Frontend.** On hold. Scoped as its own item once Krish
-  decides between Streamlit and Next.js + HeroUI. Whichever is chosen, it
-  consumes the API exactly as specified in AGENTS.md's "API design for
-  live interaction" section (see Phase 6's requirement update) — no
-  backend changes should be needed to support it. Phases 8 and 9 do not
-  depend on this decision and can proceed first if useful.
+- [ ] **Phase 10 — Frontend.** Final decision: Next.js + HeroUI. The
+  frontend is not scaffolded or modified yet; it remains deferred until the
+  Phase 10 work begins. It consumes the API exactly as specified in
+  AGENTS.md's "API design for live interaction" section (see Phase 6's
+  requirement update) — no backend changes should be needed to support it.
+  Phases 8 and 9 do not depend on this decision and can proceed first if
+  useful.
 
 - [ ] **Phase 11 — Deployment & cloud-LLM provider-swap validation.**
   Deploy the backend (and, once built, the frontend) to Render or
