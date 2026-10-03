@@ -16,7 +16,9 @@ from backend.models.schemas import (
 )
 
 DEFAULT_USERNAME = "local-doctor"
-Decision = Literal["accepted", "ignored", "exported"]
+SuggestionDecision = Literal["accepted", "ignored"]
+AuditDecision = Literal["accepted", "ignored", "exported"]
+Decision = AuditDecision
 
 
 def _get_or_create_user(db: Session) -> User:
@@ -75,7 +77,7 @@ def record_decision(
         return None
 
     decided_at = datetime.now(UTC)
-    suggestion.decision = decision
+    suggestion.decision = cast(SuggestionDecision | None, decision)
     suggestion.decided_at = decided_at
     report.audit_logs.append(
         AuditLog(
@@ -120,7 +122,7 @@ def update_suggestion_status(
     )
     if suggestion is None:
         return None
-    suggestion.decision = decision
+    suggestion.decision = cast(SuggestionDecision | None, decision)
     suggestion.decided_at = None if decision is None else datetime.now(UTC)
     if decision is not None:
         report.audit_logs.append(
@@ -208,7 +210,7 @@ def to_persisted_response(report: Report) -> PersistedReportResponse:
                 else "pending"
             ),
             decision=(
-                cast(Decision, suggestion.decision)
+                cast(SuggestionDecision, suggestion.decision)
                 if suggestion.decision is not None
                 else None
             ),
