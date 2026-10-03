@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from backend.config import get_ollama_base_url, get_ollama_model
 from backend.db import get_db
+from backend.formatting.structuring import structure_document, verify_content_presence
 from backend.llm.provider import LLMProvider, OllamaProvider
 from backend.models.schemas import (
     DecisionRequest,
@@ -22,6 +23,7 @@ from backend.services.persistence import (
     find_report,
     list_reports,
     record_decision,
+    record_export,
     to_persisted_response,
     update_suggestion_status,
 )
@@ -146,6 +148,38 @@ def preview_review(
         format=format,  # type: ignore[arg-type]
         content=report.source_text,
         exported=False,
+    )
+
+
+@reviews_router.post("/{report_id}/export", response_model=PreviewResponse)
+def export_review(
+    report_id: int,
+    format: str = Query(..., pattern="^(pdf|docx|txt)$"),
+    db: Session = DB_DEPENDENCY,
+) -> PreviewResponse:
+    report = find_report(db, report_id)
+    if report is None:
+        raise HTTPException(status_code=404, detail="Review not found.")
+
+    accepted_suggestions = [
+        suggestion for suggestion in report.suggestions if suggestion.decision == "accepted"
+    ]
+    structured = structure_document(report.source_text, accepted_suggestions)
+    if not verify_content_presence(report.source_text, structured):
+        raise HTTPException(
+            status_code=500,
+            detail="Structured export dropped original document content; verification failed.",
+        )
+
+    export = record_export(db, report_id)
+    if export is None:
+        raise HTTPException(status_code=404, detail="Review not found.")
+
+    return PreviewResponse(
+        report_id=report.id,
+        format=format,  # type: ignore[arg-type]
+        content=structured,
+        exported=True,
     )
 
 

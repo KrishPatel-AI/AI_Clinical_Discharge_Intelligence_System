@@ -78,11 +78,11 @@ class SuggestionStatusRequest(BaseModel):
 
 
 class AuditLogResponse(BaseModel):
-    """One persisted doctor decision."""
+    """One persisted doctor decision or system action."""
 
     id: int
-    suggestion_id: int
-    decision: Literal["accepted", "ignored"]
+    suggestion_id: int | None
+    decision: Literal["accepted", "ignored", "exported"]
     decided_at: str
 
 

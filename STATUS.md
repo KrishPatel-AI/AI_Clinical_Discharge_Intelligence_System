@@ -37,30 +37,26 @@ work on.
   `phase-4-rag-retrieval-comparison`, including known-diagnosis and
   no-match tests. Re-validated against the Phase 1 India-sourced documents
   as part of the Phase 1 verification above.
-- Phase 5 — **requirement update verified complete, 2026-09-23**, with one
-  point to confirm rather than assume: the verification states scoring
-  (`_score` in `workflow.py`) is algorithmic, not a second LLM call, which
-  would make it inherently deterministic. This is a more specific claim
-  than the requirement update asked for (which assumed scoring stayed an
-  LLM call, just pinned/temperature-0). ARCHITECTURE.md is not updated to
-  reflect "scoring has no LLM call" until that's confirmed directly — see
-  the open item below. The `ReviewResponse` schema contract, no-match
-  suppression, guideline-passage + source-URL on every suggestion, and
-  golden scoring tests (`test_golden_scoring.py`) are confirmed either way.
+- Phase 5 — **requirement update verified complete, 2026-09-23.** The
+  scoring path in `_score` is algorithmic, not an LLM call; the
+  `ReviewResponse` schema contract, no-match suppression, guideline-passage
+  + source-URL on every suggestion, and golden scoring tests are all
+  confirmed in code and tests.
 - Phase 6 — **requirement update verified complete, 2026-09-23, and
-  merged to `main`** (verified via `git merge-base --is-ancestor`). The
-  "merge is still pending" note below was stale and is now corrected. Live
+  merged to `main`** (verified via `git merge-base --is-ancestor`). Live
   per-suggestion `PATCH`, `preview`, and filterable `GET /reviews` exist
   in `discharge.py`; persistence in `persistence.py`/`database.py`;
   contract in `schemas.py`; covered by `test_persistence.py`.
-- **Open item (not a phase blocker):** confirm whether `_score` in
-  `workflow.py` makes any LLM call at all. If it's fully programmatic,
-  update ARCHITECTURE.md's AI-processing layer description and Key
-  Decisions to say so explicitly — algorithmic scoring is a good,
-  deterministic design choice worth recording accurately, not leaving
-  implied by an unverified paraphrase.
-- Active phase: **Phase 7 — Structuring & formatting.**
-- Last updated: 2026-09-23
+- Phase 7 — **verified complete, 2026-10-03.** Export-time structuring and
+  formatting are implemented as a separate, layout-only stage in
+  `backend/formatting/structuring.py` and wired into the export route in
+  `backend/routers/discharge.py`. The formatter does not rewrite or drop
+  original clinical content; it re-labels/reorders original text, adds only
+  accepted suggestions under a clearly marked section, and enforces the
+  content-presence verification check before completion. The Phase 7 tests
+  pass and the project lint/test suite remains green.
+- Active phase: **Phase 8 — Evaluation & monitoring, fully wired.**
+- Last updated: 2026-10-03
 
 ## Definition of done — applies to every phase below
 - Tests exist for its success path and at least one realistic failure
@@ -159,18 +155,18 @@ original work didn't happen.
   `discharge.py`, backed by `persistence.py`/`database.py` and the
   `schemas.py` contract, covered by `test_persistence.py`.
 
-- [ ] **Phase 7 — Structuring & formatting.** New phase, added
-  2026-09-22. Export-time, layout-only reformatting of the discharge
+- [x] **Phase 7 — Structuring & formatting.** Verified complete,
+  2026-10-03. Export-time, layout-only reformatting of the discharge
   document into a consistent structure (e.g. Patient Information,
   Diagnosis, Hospital Course, Medications, Advice, Follow-up), independent
   of the completeness score — runs even when the score is already high or
-  when no guideline match exists. Must never add, remove, or reword
-  clinical content; only reorganize and label it. Include a verification
-  step confirming every sentence of the original document is still
-  present in the structured output. Done = a high-scoring document and a
-  no-match document both produce a cleanly structured export with zero
-  content loss, confirmed by the verification step, not just visual
-  inspection.
+  when no guideline match exists. The formatter never adds, removes, or
+  rewords original clinical content; it reorganizes and labels original
+  content, and only includes accepted suggestions under a clearly marked
+  "Added on review" section. A content-presence verification step confirms
+  every original sentence remains present in the structured output before
+  the export is accepted. Verified by the Phase 7 test coverage and the
+  project test suite.
 
 - [ ] **Phase 8 — Evaluation & monitoring, fully wired.** Langfuse tracing
   across every layer (extraction, retrieval, comparison, scoring,

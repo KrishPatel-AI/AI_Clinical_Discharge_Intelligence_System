@@ -16,7 +16,7 @@ from backend.models.schemas import (
 )
 
 DEFAULT_USERNAME = "local-doctor"
-Decision = Literal["accepted", "ignored"]
+Decision = Literal["accepted", "ignored", "exported"]
 
 
 def _get_or_create_user(db: Session) -> User:
@@ -82,6 +82,24 @@ def record_decision(
             suggestion_id=suggestion.id,
             decision=decision,
             decided_at=decided_at,
+        )
+    )
+    db.commit()
+    db.refresh(report)
+    return report
+
+
+def record_export(db: Session, report_id: int) -> Report | None:
+    """Record an export event against a persisted review."""
+    report = find_report(db, report_id)
+    if report is None:
+        return None
+    export_time = datetime.now(UTC)
+    report.audit_logs.append(
+        AuditLog(
+            suggestion_id=None,
+            decision="exported",
+            decided_at=export_time,
         )
     )
     db.commit()

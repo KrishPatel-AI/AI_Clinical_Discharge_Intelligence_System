@@ -10,18 +10,19 @@ the AI never edits the discharge document itself.
 B.Tech Engineering Project - II, Semester VII, AY 2026-27, Group 5-B.
 
 ## Status
-Phases 0-5 are complete against the current requirements. The initial
-Indian-source knowledge base covers asthma, diabetes, and high blood
+Phases 0-7 are complete against the verified current requirements. The
+initial Indian-source knowledge base covers asthma, diabetes, and high blood
 pressure: seven preserved PDFs, seven Markdown conversions, and 1,100 unique
 FAISS chunks with source traceability. Phase 4 is revalidated against that
 knowledge base, and Phase 5 uses deterministic algorithmic scoring with
 golden tests. Phase 6 is complete: the typed `/reviews` API supports live
 per-suggestion status updates, non-exporting previews, and server-side
-history search and grouping. Phase 7 is the next deferred backend phase;
-its boundary is documented in [STATUS.md](./STATUS.md). The frontend
-decision is finalized as Next.js with HeroUI, but frontend implementation is
-deferred to Phase 10. Phases 7-9 (structuring, evaluation/monitoring, and
-containerization) are backend work still to come; Phase 11 is deployment.
+history search and grouping. Phase 7 is complete: export-time layout-only
+structuring is implemented, with content-presence verification to ensure the
+original discharge content is not dropped during export formatting. The
+frontend decision is finalized as Next.js with HeroUI, but frontend
+implementation is deferred to Phase 10. Phases 8-9 are the next backend
+work items, followed by Phase 10 frontend and Phase 11 deployment.
 See [STATUS.md](./STATUS.md) for the current phase and the full plan.
 
 ## Documentation map
