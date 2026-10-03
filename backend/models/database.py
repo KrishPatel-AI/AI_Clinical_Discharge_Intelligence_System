@@ -64,12 +64,12 @@ class AuditLog(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     report_id: Mapped[int] = mapped_column(ForeignKey("reports.id"), nullable=False)
-    suggestion_id: Mapped[int] = mapped_column(
-        ForeignKey("suggestions.id"), nullable=False
+    suggestion_id: Mapped[int | None] = mapped_column(
+        ForeignKey("suggestions.id"), nullable=True
     )
     decision: Mapped[str] = mapped_column(String(16), nullable=False)
     decided_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
     report: Mapped[Report] = relationship(back_populates="audit_logs")
-    suggestion: Mapped[SuggestionRecord] = relationship(back_populates="audit_logs")
+    suggestion: Mapped[SuggestionRecord | None] = relationship(back_populates="audit_logs")

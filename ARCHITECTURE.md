@@ -36,6 +36,8 @@ instead of guessing.
 7. **Structure & format (export-time)** — independent of the score,
    the document is reorganized into a consistent, labeled structure
    (layout only, no content changes) as part of producing the export.
+   This phase is implemented as a dedicated formatting stage and verifies
+   that original sentences remain present before export is accepted.
 8. **Export** — the doctor previews, then downloads, the final reviewed
    and structured document as PDF, DOCX, or TXT. A complete audit record
    is saved: timestamp, completeness score, every suggestion generated,
