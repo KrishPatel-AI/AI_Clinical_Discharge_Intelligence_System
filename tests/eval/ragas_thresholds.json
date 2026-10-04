@@ -1,0 +1,5 @@
+{
+  "faithfulness": 0.5,
+  "answer_relevancy": 0.5,
+  "context_precision": 0.5
+}

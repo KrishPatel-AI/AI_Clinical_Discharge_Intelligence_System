@@ -16,6 +16,7 @@ from backend.formatting.structuring import (
 from backend.main import app
 from backend.models.database import Report
 from backend.models.schemas import DischargeExtraction
+from backend.rag.workflow import review_extraction
 from backend.routers import discharge
 from backend.routers.discharge import get_llm_provider
 from knowledge_base.ingest import build_index
@@ -194,5 +195,50 @@ def test_export_returns_downloadable_file_and_records_export(
         stored = database.get(Report, report_id)
         assert stored is not None
         assert any(log.decision == "exported" for log in stored.audit_logs)
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_no_match_review_exports_verified_structured_content(
+    monkeypatch, index_dir, database: Session
+) -> None:
+    class FakeProvider:
+        def extract_discharge(self, text: str) -> DischargeExtraction:
+            return DischargeExtraction(diagnosis="Rare neurological disorder")
+
+    def override_get_db():
+        yield database
+
+    source_text = (
+        "Patient is 58 years old. Diagnosis: a rare neurological condition. "
+        "Discharged in stable condition. Follow-up in 7 days."
+    )
+    monkeypatch.setattr(
+        discharge,
+        "review_extraction",
+        lambda extraction: review_extraction(extraction, index_dir),
+    )
+    app.dependency_overrides[get_db] = override_get_db
+    app.dependency_overrides[get_llm_provider] = FakeProvider
+    try:
+        client = TestClient(app)
+        created = client.post(
+            "/reviews",
+            files={"file": ("summary.txt", source_text.encode(), "text/plain")},
+        )
+        assert created.status_code == 200
+        assert created.json()["status"] == "no_match"
+        assert created.json()["suggestions"] == []
+
+        exported = client.post(
+            f"/reviews/{created.json()['report_id']}/export",
+            params={"format": "txt"},
+        )
+        assert exported.status_code == 200
+        structured = exported.content.decode("utf-8")
+        assert "Patient Information" in structured
+        assert "Diagnosis" in structured
+        assert "Follow-up" in structured
+        assert verify_content_presence(source_text, structured)
     finally:
         app.dependency_overrides.clear()

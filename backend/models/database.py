@@ -29,6 +29,10 @@ class Report(Base):
     status: Mapped[str] = mapped_column(String(32), nullable=False)
     message: Mapped[str] = mapped_column(Text, nullable=False)
     source_text: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    langfuse_trace_id: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    langfuse_parent_observation_id: Mapped[str | None] = mapped_column(
+        String(16), nullable=True
+    )
     completeness_score: Mapped[int | None] = mapped_column(Integer, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
