@@ -1,5 +1,6 @@
 """Discharge-summary upload routes."""
 
+from pathlib import Path
 from typing import Literal
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, Response, UploadFile
@@ -20,6 +21,7 @@ from backend.models.schemas import (
     ReviewResponse,
     SuggestionStatusRequest,
 )
+from backend.observability.tracing import observation
 from backend.rag.workflow import review_extraction
 from backend.services.extraction import extract_upload, extract_upload_document
 from backend.services.persistence import (
@@ -70,16 +72,7 @@ async def review_discharge(
 ) -> ReviewResponse:
     """Extract, review, and persist a discharge summary report."""
     try:
-        source_text, extraction = await extract_upload_document(file, provider)
-        review = review_extraction(extraction)
-        report = create_report(db, file.filename or "unknown", review, source_text)
-        suggestions = [
-            suggestion.model_copy(update={"suggestion_id": persisted.id})
-            for suggestion, persisted in zip(review.suggestions, report.suggestions)
-        ]
-        return review.model_copy(
-            update={"report_id": report.id, "suggestions": suggestions}
-        )
+        return await _create_review(file, provider, db)
     except ValueError as error:
         raise HTTPException(status_code=400, detail=str(error)) from error
     except RuntimeError as error:
@@ -89,14 +82,34 @@ async def review_discharge(
 async def _create_review(
     file: UploadFile, provider: LLMProvider, db: Session
 ) -> ReviewResponse:
-    source_text, extraction = await extract_upload_document(file, provider)
-    review = review_extraction(extraction)
-    report = create_report(db, file.filename or "unknown", review, source_text)
-    suggestions = [
-        suggestion.model_copy(update={"suggestion_id": persisted.id})
-        for suggestion, persisted in zip(review.suggestions, report.suggestions)
-    ]
-    return review.model_copy(update={"report_id": report.id, "suggestions": suggestions})
+    with observation(
+        "review-discharge-document",
+        input_data={"file_type": Path(file.filename or "").suffix.lower()},
+    ) as trace:
+        source_text, extraction = await extract_upload_document(file, provider)
+        review = review_extraction(extraction)
+        report = create_report(
+            db,
+            file.filename or "unknown",
+            review,
+            source_text,
+            langfuse_trace_id=trace.trace_id,
+            langfuse_parent_observation_id=trace.observation_id,
+        )
+        suggestions = [
+            suggestion.model_copy(update={"suggestion_id": persisted.id})
+            for suggestion, persisted in zip(review.suggestions, report.suggestions)
+        ]
+        trace.update(
+            {
+                "review_status": review.status,
+                "comparison_count": len(review.comparisons),
+                "suggestion_count": len(review.suggestions),
+            }
+        )
+        return review.model_copy(
+            update={"report_id": report.id, "suggestions": suggestions}
+        )
 
 
 @reviews_router.post("", response_model=ReviewResponse)
@@ -144,13 +157,36 @@ def _structured_report_content(report: Report) -> str:
         for suggestion in report.suggestions
         if suggestion.decision == "accepted"
     ]
-    structured = structure_document(report.source_text, accepted_suggestions)
-    if not verify_content_presence(report.source_text, structured):
-        raise HTTPException(
-            status_code=500,
-            detail="Structured document dropped original content; verification failed.",
+    with observation(
+        "structure-reviewed-document",
+        as_type="chain",
+        input_data={
+            "source_character_count": len(report.source_text),
+            "accepted_suggestion_count": len(accepted_suggestions),
+        },
+    ) as trace:
+        structured = structure_document(report.source_text, accepted_suggestions)
+        with observation(
+            "verify-original-content-presence",
+            input_data={"source_character_count": len(report.source_text)},
+        ) as verification:
+            content_is_preserved = verify_content_presence(
+                report.source_text, structured
+            )
+            verification.update({"content_preserved": content_is_preserved})
+        if not content_is_preserved:
+            trace.update({"content_preserved": False})
+            raise HTTPException(
+                status_code=500,
+                detail="Structured document dropped original content; verification failed.",
+            )
+        trace.update(
+            {
+                "content_preserved": True,
+                "structured_character_count": len(structured),
+            }
         )
-    return structured
+        return structured
 
 
 @reviews_router.get("/{report_id}/preview", response_model=PreviewResponse)
@@ -180,22 +216,35 @@ def export_review(
     if report is None:
         raise HTTPException(status_code=404, detail="Review not found.")
 
-    structured = _structured_report_content(report)
-    artifact = create_export(structured, format)
+    with observation(
+        "export-reviewed-document",
+        input_data={"format": format, "report_status": report.status},
+        trace_id=report.langfuse_trace_id,
+        parent_observation_id=report.langfuse_parent_observation_id,
+    ) as trace:
+        structured = _structured_report_content(report)
+        artifact = create_export(structured, format)
 
-    export = record_export(db, report_id)
-    if export is None:
-        raise HTTPException(status_code=404, detail="Review not found.")
+        export = record_export(db, report_id)
+        if export is None:
+            raise HTTPException(status_code=404, detail="Review not found.")
 
-    return Response(
-        content=artifact.content,
-        media_type=artifact.media_type,
-        headers={
-            "Content-Disposition": (
-                f'attachment; filename="review-{report.id}.{artifact.extension}"'
-            )
-        },
-    )
+        trace.update(
+            {
+                "export_recorded": True,
+                "format": format,
+                "artifact_byte_count": len(artifact.content),
+            }
+        )
+        return Response(
+            content=artifact.content,
+            media_type=artifact.media_type,
+            headers={
+                "Content-Disposition": (
+                    f'attachment; filename="review-{report.id}.{artifact.extension}"'
+                )
+            },
+        )
 
 
 @reviews_router.get("", response_model=ReviewHistoryResponse)

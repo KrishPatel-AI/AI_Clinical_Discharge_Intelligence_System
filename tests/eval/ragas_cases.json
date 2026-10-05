@@ -1,0 +1,43 @@
+{
+  "cases": [
+    {
+      "name": "asthma diagnosis only",
+      "extraction": {
+        "diagnosis": "Asthma"
+      },
+      "expected_suggestion_sections": [
+        "medications",
+        "follow_up_requirements",
+        "warning_signs"
+      ],
+      "reference": "The matched guideline is compared with the extracted diagnosis, medication, follow-up, and warning-sign sections. Missing sections are listed for doctor review."
+    },
+    {
+      "name": "type 2 diabetes diagnosis only",
+      "extraction": {
+        "diagnosis": "Type 2 diabetes mellitus"
+      },
+      "expected_suggestion_sections": [
+        "medications",
+        "follow_up_requirements",
+        "warning_signs"
+      ],
+      "reference": "The matched guideline is compared with the extracted diagnosis, medication, follow-up, and warning-sign sections. Missing sections are listed for doctor review."
+    },
+    {
+      "name": "adult hypertension diagnosis only",
+      "extraction": {
+        "diagnosis": "Hypertension in adults"
+      },
+      "expected_suggestion_sections": [
+        "medications",
+        "follow_up_requirements",
+        "warning_signs"
+      ],
+      "reference": "The matched guideline is compared with the extracted diagnosis, medication, follow-up, and warning-sign sections. Missing sections are listed for doctor review."
+    }
+  ],
+  "no_match_case": {
+    "diagnosis": "Rare unrelated diagnosis"
+  }
+}

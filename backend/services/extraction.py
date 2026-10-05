@@ -12,6 +12,7 @@ from pypdf import PdfReader
 
 from backend.llm.provider import LLMProvider
 from backend.models.schemas import DischargeExtraction
+from backend.observability.tracing import observation
 
 MAX_UPLOAD_BYTES = 5 * 1024 * 1024
 SUPPORTED_EXTENSIONS = {".txt", ".pdf", ".docx"}
@@ -46,12 +47,27 @@ async def extract_upload_document(
 ) -> tuple[str, DischargeExtraction]:
     """Return sanitized source text and its structured extraction."""
     filename = upload.filename or ""
-    if Path(filename).suffix.lower() not in SUPPORTED_EXTENSIONS:
-        raise ValueError("Unsupported file type. Use PDF, DOCX, or TXT.")
-    content = await upload.read(MAX_UPLOAD_BYTES + 1)
-    if len(content) > MAX_UPLOAD_BYTES:
-        raise ValueError("File exceeds the 5 MB upload limit.")
-    text = _extract_text(filename, content)
-    if not text:
-        raise ValueError("The uploaded document contains no readable text.")
-    return text, provider.extract_discharge(text)
+    file_type = Path(filename).suffix.lower()
+    with observation(
+        "extract-discharge-document",
+        input_data={"file_type": file_type, "max_upload_bytes": MAX_UPLOAD_BYTES},
+    ) as trace:
+        if file_type not in SUPPORTED_EXTENSIONS:
+            raise ValueError("Unsupported file type. Use PDF, DOCX, or TXT.")
+        content = await upload.read(MAX_UPLOAD_BYTES + 1)
+        if len(content) > MAX_UPLOAD_BYTES:
+            raise ValueError("File exceeds the 5 MB upload limit.")
+        text = _extract_text(filename, content)
+        if not text:
+            raise ValueError("The uploaded document contains no readable text.")
+        extraction = provider.extract_discharge(text)
+        trace.update(
+            {
+                "success": True,
+                "source_character_count": len(text),
+                "medication_count": len(extraction.medications),
+                "follow_up_count": len(extraction.follow_up_requirements),
+                "warning_sign_count": len(extraction.warning_signs),
+            }
+        )
+        return text, extraction

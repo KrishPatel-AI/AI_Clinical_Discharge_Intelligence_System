@@ -15,6 +15,7 @@ from backend.models.schemas import (
     ReviewResponse,
     Suggestion,
 )
+from backend.observability.tracing import observation
 from knowledge_base.ingest import DEFAULT_INDEX_DIR, query_index
 
 MIN_RETRIEVAL_SIMILARITY = 0.2
@@ -34,6 +35,24 @@ def _tokens(value: str) -> set[str]:
 
 
 def _retrieve(state: ReviewState) -> dict[str, GuidelineMatch | None]:
+    extraction = state["extraction"]
+    with observation(
+        "retrieve-guideline",
+        as_type="retriever",
+        input_data={"diagnosis_token_count": len(_tokens(extraction.diagnosis))},
+    ) as trace:
+        result = _retrieve_impl(state)
+        match = result["match"]
+        trace.update(
+            {
+                "matched": match is not None,
+                "similarity": match.similarity if match is not None else None,
+            }
+        )
+        return result
+
+
+def _retrieve_impl(state: ReviewState) -> dict[str, GuidelineMatch | None]:
     extraction = state["extraction"]
     result = query_index(
         extraction.diagnosis,
@@ -64,6 +83,23 @@ def _retrieve(state: ReviewState) -> dict[str, GuidelineMatch | None]:
 
 
 def _compare(state: ReviewState) -> dict[str, Any]:
+    with observation(
+        "compare-discharge-sections",
+        as_type="chain",
+        input_data={"guideline_matched": state.get("match") is not None},
+    ) as trace:
+        result = _compare_impl(state)
+        comparisons = result["comparisons"]
+        trace.update(
+            {
+                "comparison_count": len(comparisons),
+                "gap_count": sum(item.status == "gap" for item in comparisons),
+            }
+        )
+        return result
+
+
+def _compare_impl(state: ReviewState) -> dict[str, Any]:
     match = state.get("match")
     extraction = state["extraction"]
     if match is None:
@@ -108,6 +144,23 @@ def _compare(state: ReviewState) -> dict[str, Any]:
 
 
 def _score(state: ReviewState) -> dict[str, ReviewResponse]:
+    with observation(
+        "score-completeness",
+        input_data={"comparison_count": len(state.get("comparisons", []))},
+    ) as trace:
+        result = _score_impl(state)
+        review = result["result"]
+        trace.update(
+            {
+                "review_status": review.status,
+                "completeness_score": review.completeness_score,
+                "suggestion_count": len(review.suggestions),
+            }
+        )
+        return result
+
+
+def _score_impl(state: ReviewState) -> dict[str, ReviewResponse]:
     result = state["result"]
     match = state.get("match")
     if match is None:

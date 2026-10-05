@@ -31,7 +31,13 @@ def _get_or_create_user(db: Session) -> User:
 
 
 def create_report(
-    db: Session, filename: str, review: ReviewResponse, source_text: str = ""
+    db: Session,
+    filename: str,
+    review: ReviewResponse,
+    source_text: str = "",
+    *,
+    langfuse_trace_id: str | None = None,
+    langfuse_parent_observation_id: str | None = None,
 ) -> Report:
     """Persist a generated review and all of its grounded suggestions."""
     report = Report(
@@ -41,6 +47,8 @@ def create_report(
         status=review.status,
         message=review.message,
         source_text=source_text,
+        langfuse_trace_id=langfuse_trace_id,
+        langfuse_parent_observation_id=langfuse_parent_observation_id,
         completeness_score=review.completeness_score,
         suggestions=[
             SuggestionRecord(

@@ -28,6 +28,19 @@ def init_db() -> None:
             connection.execute(
                 text("ALTER TABLE reports ADD COLUMN source_text TEXT NOT NULL DEFAULT ''")
             )
+    if "langfuse_trace_id" not in columns:
+        with engine.begin() as connection:
+            connection.execute(
+                text("ALTER TABLE reports ADD COLUMN langfuse_trace_id VARCHAR(32)")
+            )
+    if "langfuse_parent_observation_id" not in columns:
+        with engine.begin() as connection:
+            connection.execute(
+                text(
+                    "ALTER TABLE reports "
+                    "ADD COLUMN langfuse_parent_observation_id VARCHAR(16)"
+                )
+            )
 
 
 def get_db() -> Generator[Session, None, None]:

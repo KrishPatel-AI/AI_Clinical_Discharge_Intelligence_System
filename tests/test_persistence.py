@@ -3,17 +3,19 @@ from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, inspect
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
+from backend import db as database_module
 from backend.db import Base, get_db
 from backend.main import app
 from backend.models.database import Report
-from backend.models.schemas import DischargeExtraction
+from backend.models.schemas import DischargeExtraction, ReviewResponse
 from backend.rag.workflow import review_extraction as run_review
 from backend.routers import discharge
 from backend.routers.discharge import get_llm_provider
+from backend.services.persistence import create_report
 from knowledge_base.ingest import build_index
 
 
@@ -108,6 +110,51 @@ def test_report_and_decision_routes_reject_missing_records() -> None:
         json={"decision": "accepted"},
     )
     assert response.status_code == 404
+
+
+def test_report_creation_persists_langfuse_trace_correlation(
+    database: Session,
+) -> None:
+    review = ReviewResponse(
+        diagnosis="Asthma",
+        status="no_match",
+        message="No matching guideline found for this diagnosis.",
+    )
+
+    report = create_report(
+        database,
+        "synthetic.txt",
+        review,
+        "Synthetic source text.",
+        langfuse_trace_id="a" * 32,
+        langfuse_parent_observation_id="b" * 16,
+    )
+
+    assert report.langfuse_trace_id == "a" * 32
+    assert report.langfuse_parent_observation_id == "b" * 16
+
+
+def test_init_db_adds_langfuse_columns_to_existing_report_table(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    engine = create_engine(f"sqlite:///{tmp_path / 'legacy.sqlite'}")
+    with engine.begin() as connection:
+        connection.exec_driver_sql(
+            "CREATE TABLE reports ("
+            "id INTEGER PRIMARY KEY, user_id INTEGER NOT NULL, "
+            "filename VARCHAR(255) NOT NULL, diagnosis VARCHAR(255) NOT NULL, "
+            "status VARCHAR(32) NOT NULL, message TEXT NOT NULL, "
+            "completeness_score INTEGER, created_at DATETIME NOT NULL)"
+        )
+    monkeypatch.setattr(database_module, "engine", engine)
+
+    database_module.init_db()
+
+    columns = {column["name"] for column in inspect(engine).get_columns("reports")}
+    assert "source_text" in columns
+    assert "langfuse_trace_id" in columns
+    assert "langfuse_parent_observation_id" in columns
+    engine.dispose()
 
 
 def test_live_review_endpoints_support_status_preview_and_history(
