@@ -29,7 +29,9 @@ happens to be accurate for the cases they actually see.
 
 ## Approved stack — do not change without flagging it first
 - Backend: Python, FastAPI
-- Frontend: Next.js + HeroUI, finalized for Phase 10
+- Frontend: undecided at this time — see the Frontend framework note below.
+  Do not build or modify any frontend code until Phase 10. See STATUS.md
+  for the current phase and this file's Phase 10 design brief below.
 - AI orchestration: LangChain + LangGraph
 - LLM runtime: Ollama, local, for development and initial deployment
 - Vector store: ChromaDB or FAISS (guideline knowledge base)
@@ -39,20 +41,22 @@ happens to be accurate for the cases they actually see.
 - Containerization / CI: Docker, GitHub Actions
 - Deployment target: Render or Railway
 
-## Frontend framework decision — Next.js + HeroUI (Phase 10)
-The frontend is finalized as Next.js with HeroUI (React and Tailwind-based,
-free and open source, with light/dark theming). This is a Phase 10 decision
-only: do not scaffold or modify frontend code while backend phases are
-active. FastAPI remains a decoupled JSON API, so the frontend can consume it
-without changing backend business logic. What earlier phases must do to keep
-that integration low-risk:
+## Frontend framework note (deferred — do not act on this yet)
+Krish is considering Next.js + HeroUI (React, Tailwind-based, free/open
+source, built-in light/dark theming) as a replacement for Streamlit, and
+separately may move between VS Code/Copilot, Cursor, or an
+Antigravity/Gemini-based setup for the coding itself. Neither decision
+changes anything in this file's scope: FastAPI already exposes a decoupled
+JSON API, so a frontend swap is a Phase 10 concern only. What earlier
+phases must do to keep that swap low-risk later:
 - Keep all API responses as typed Pydantic models (already required).
 - Enable CORS on the FastAPI app, configurable by allowed-origin list via
   environment variable, even though nothing depends on it yet.
 - Follow the granular endpoint shape in the "API design for live
-  interaction" section below — a live-updating frontend needs per-suggestion
-  endpoints, not just a single upload-and-return call.
-Do not scaffold the Next.js/HeroUI frontend before Phase 10.
+  interaction" section below — a live-updating frontend (Streamlit,
+  Next.js, or anything else) needs per-suggestion endpoints, not just a
+  single upload-and-return call.
+Do not pick or scaffold a frontend framework before Phase 10.
 
 ## Phase 10 design brief (reference only — do not act on this before Phase 10)
 Recorded now, ahead of time, so these requirements aren't lost or
@@ -138,31 +142,23 @@ LLMs to accept. Concretely:
   unexplained inconsistency — if retrieval confidence is low or output
   validation fails, that must produce an explicit state (see the
   no-match guardrail in the RAG evaluation section), never a silent guess.
-- The current scoring stage is algorithmic rather than an LLM call. It uses
-  the validated comparison state to calculate the score and create cited
-  suggestions, so temperature/model/retry settings do not apply to scoring.
-  Its output is validated by the `ReviewResponse` schema and fixed golden
-  cases.
 
-## Guideline knowledge base — Phase 1 and Phase 2 complete
-The initial guideline knowledge base contains real, sourced Indian clinical
-documents for asthma, diabetes, and high blood pressure. The source PDFs are
-preserved under `knowledge_base/guidelines/<diagnosis-slug>/` alongside
-full Markdown conversions and metadata. Metadata records the source, title,
-URL, retrieval date, diagnosis, text extractability, and known
-reuse/licensing terms. Do not fabricate guideline content, and do not infer
-that a source may be redistributed merely because it is publicly readable.
-
-The verified documents are from ICMR, the Department of Health Research and
-Ministry of Health and Family Welfare, and the Lung India publication that
-documents bronchial-asthma recommendations. The indexed set currently has
-seven documents and 1,100 unique FAISS chunks across the three diagnosis
-folders. The Markdown ingestion path preserves source filenames and URLs in
-index metadata and remains idempotent.
-
-Future diagnosis coverage must be added as a new sourced folder with its
-metadata and Markdown representation. Do not change extraction, comparison,
-scoring, or retrieval code merely to add a diagnosis.
+## Guideline knowledge base — sourcing and structure
+Krish does not have guideline data yet. This is Phase 1's job, not assumed
+to already exist. Do not fabricate or invent guideline content — only use
+real, sourced documents, and prioritize Indian sources specifically (see
+Regional scope above):
+- Primary candidates to evaluate in Phase 1: ICMR (Indian Council of
+  Medical Research, icmr.gov.in) Standard Treatment Guidelines, which
+  cover many relevant categories (e.g. Hypertension, Respiratory
+  conditions, Diabetic Foot, Endocrinology, Paediatrics) — verify current
+  reproduction/redistribution terms before ingesting, since ICMR
+  publications carry a notice requiring permission for reproduction or
+  distribution, even though the documents are publicly readable. Also
+  evaluate National Health Mission / National Health Systems Resource
+  Centre (NHSRC) adapted Standard Treatment Guidelines, which exist for
+  several common conditions and were explicitly adapted for Indian
+  clinical practice.
 - Guidelines live under `/knowledge_base/guidelines/<diagnosis-slug>/`,
   one folder per diagnosis, each with the source document(s) and a
   metadata file (source name, URL, date retrieved, diagnosis name/
@@ -241,11 +237,6 @@ accordingly:
 - `GET /reviews?search=&status=&sort=&group_by=` — history listing with
   search, filter, sort, and grouping support, so a history UI doesn't need
   to fetch everything and filter client-side.
-
-Phase 6 implements these routes with typed Pydantic responses. Preview is a
-non-exporting text-safe representation of the persisted source document;
-layout structuring and downloadable export remain Phase 7 work. The legacy
-`/discharge` routes remain available for compatibility with existing clients.
 
 ## Non-negotiable project rule
 The system is advisory only. Never implement a path where a suggestion is
@@ -332,3 +323,19 @@ Keep this section accurate — update it the moment a command changes.
   STATUS.md is active.
 - Update ARCHITECTURE.md the moment a real architectural decision changes.
 - Update STATUS.md at the end of every phase or enhancement task.
+
+## Git workflow — division of labor (standing rule)
+Krish runs all git mechanics himself: `git add`, `git commit`, `git push`,
+branch creation, and merging pull requests (via terminal or the GitHub
+web UI). This is deliberate, not a gap — it costs no agent budget, and he
+is capable of running exact commands given to him even though he doesn't
+write git workflows from scratch himself. Unless explicitly asked to do
+otherwise in a given session:
+- Propose a commit message / PR description as text for him to use — do
+  not run `git add`/`git commit`/`git push`/merge yourself.
+- Do all actual code, config, and documentation changes yourself — that
+  part is not something to hand back to him.
+- When a task is genuinely blocked on something only he can do (a service
+  sign-up, an API key, an environment install, a git push), say so
+  plainly and stop there rather than attempting a workaround that burns
+  budget without being able to finish anyway.

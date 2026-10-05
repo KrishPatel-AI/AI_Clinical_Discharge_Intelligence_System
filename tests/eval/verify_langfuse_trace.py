@@ -11,6 +11,7 @@ from fastapi.testclient import TestClient
 from langfuse import get_client
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import StaticPool
 
 from backend.config import (
     get_ollama_base_url,
@@ -50,6 +51,7 @@ def main() -> None:
     engine = create_engine(
         "sqlite://",
         connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
     )
     Base.metadata.create_all(engine)
     session_factory = sessionmaker(bind=engine, autoflush=False, autocommit=False)

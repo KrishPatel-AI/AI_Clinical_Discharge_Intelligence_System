@@ -83,12 +83,29 @@ def _build_review_rows(index_dir: Path) -> tuple[list[dict[str, Any]], int]:
             },
             sort_keys=True,
         )
+        extraction_evidence = (
+            "Structured fields actually supplied to the review: "
+            + json.dumps(extraction.model_dump(), sort_keys=True)
+            + ". Empty arrays mean no value was extracted for that section."
+        )
+        review_rules = (
+            "The workflow compares diagnosis, medications, follow_up_requirements, "
+            "and warning_signs. A comparison is matched only when extracted values "
+            "share tokens with the retrieved guideline; otherwise its status is gap. "
+            "Completeness is 100 times matched sections divided by the number of "
+            "compared sections. Suggestions are emitted for gap sections."
+        )
         rows.append(
             {
                 "name": case["name"],
                 "user_input": user_input,
                 "response": response,
                 "retrieved_contexts": [review.guideline.passage],
+                "faithfulness_contexts": [
+                    extraction_evidence,
+                    review_rules,
+                    review.guideline.passage,
+                ],
                 "reference": case["reference"],
             }
         )
@@ -124,10 +141,12 @@ async def _score_rows(rows: list[dict[str, Any]]) -> dict[str, list[float]]:
             metric_input = {
                 "user_input": row["user_input"],
             }
+            if name == "faithfulness":
+                metric_input["retrieved_contexts"] = row["faithfulness_contexts"]
+            elif name == "context_precision":
+                metric_input["retrieved_contexts"] = row["retrieved_contexts"]
             if name != "context_precision":
                 metric_input["response"] = row["response"]
-            if name != "answer_relevancy":
-                metric_input["retrieved_contexts"] = row["retrieved_contexts"]
             if name == "context_precision":
                 metric_input["reference"] = row["reference"]
             result = await metric.ascore(**metric_input)
