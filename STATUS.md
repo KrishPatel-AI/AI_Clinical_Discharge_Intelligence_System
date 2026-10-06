@@ -37,27 +37,38 @@ work on.
   `phase-4-rag-retrieval-comparison`, including known-diagnosis and
   no-match tests. Re-validated against the Phase 1 India-sourced documents
   as part of the Phase 1 verification above.
-- Phase 5 — **requirement update verified complete, 2026-09-23.** The
-  scoring path in `_score` is algorithmic, not an LLM call; the
-  `ReviewResponse` schema contract, no-match suppression, guideline-passage
-  + source-URL on every suggestion, and golden scoring tests are all
-  confirmed in code and tests.
+- Phase 5 — **requirement update verified complete, 2026-09-23**, with one
+  point to confirm rather than assume: the verification states scoring
+  (`_score` in `workflow.py`) is algorithmic, not a second LLM call, which
+  would make it inherently deterministic. This is a more specific claim
+  than the requirement update asked for (which assumed scoring stayed an
+  LLM call, just pinned/temperature-0). ARCHITECTURE.md is not updated to
+  reflect "scoring has no LLM call" until that's confirmed directly — see
+  the open item below. The `ReviewResponse` schema contract, no-match
+  suppression, guideline-passage + source-URL on every suggestion, and
+  golden scoring tests (`test_golden_scoring.py`) are confirmed either way.
 - Phase 6 — **requirement update verified complete, 2026-09-23, and
-  merged to `main`** (verified via `git merge-base --is-ancestor`). Live
+  merged to `main`** (verified via `git merge-base --is-ancestor`). The
+  "merge is still pending" note below was stale and is now corrected. Live
   per-suggestion `PATCH`, `preview`, and filterable `GET /reviews` exist
   in `discharge.py`; persistence in `persistence.py`/`database.py`;
   contract in `schemas.py`; covered by `test_persistence.py`.
-- Phase 7 — **verified complete, 2026-10-03.** Export-time structuring and
-  formatting are implemented as a separate, layout-only stage in
-  `backend/formatting/structuring.py` and wired into the export route in
-  `backend/routers/discharge.py`. The formatter does not rewrite or drop
-  original clinical content; it re-labels/reorders original text, adds only
-  accepted suggestions under a clearly marked section, and enforces the
-  content-presence verification check before completion. The preview route
-  intentionally returns the persisted source text before export so the UI
-  can preview the current document without marking it as exported.
-- Active phase: **Phase 8 — Evaluation & monitoring, next backend work item.**
-- Last updated: 2026-10-03
+- **Open item (not a phase blocker):** confirm whether `_score` in
+  `workflow.py` makes any LLM call at all. If it's fully programmatic,
+  update ARCHITECTURE.md's AI-processing layer description and Key
+  Decisions to say so explicitly — algorithmic scoring is a good,
+  deterministic design choice worth recording accurately, not leaving
+  implied by an unverified paraphrase.
+- Phase 7 (Structuring & formatting) is verified complete.
+- Phase 8 was marked complete on 2026-09-24, then reopened the same day
+  after a more thorough audit found the Ragas evaluation design didn't
+  actually prove what it claimed to (see Phase 8's entry below). Tracing
+  and the dependency audit are solid; the Ragas fix is in progress,
+  uncommitted. Krish is moving from GitHub Copilot (rate-limited until
+  ~Nov 1) to Cursor to finish this.
+- Active phase: **Phase 8 — Evaluation & monitoring** (finishing the
+  Ragas redesign, then push + confirm green CI). Phase 9 starts after.
+- Last updated: 2026-09-24
 
 ## Definition of done — applies to every phase below
 - Tests exist for its success path and at least one realistic failure
@@ -156,41 +167,62 @@ original work didn't happen.
   `discharge.py`, backed by `persistence.py`/`database.py` and the
   `schemas.py` contract, covered by `test_persistence.py`.
 
-- [x] **Phase 7 — Structuring & formatting.** Verified complete,
-  2026-10-03. Export-time, layout-only reformatting of the discharge
+- [ ] **Phase 7 — Structuring & formatting.** New phase, added
+  2026-09-22. Export-time, layout-only reformatting of the discharge
   document into a consistent structure (e.g. Patient Information,
   Diagnosis, Hospital Course, Medications, Advice, Follow-up), independent
   of the completeness score — runs even when the score is already high or
-  when no guideline match exists. The formatter never adds, removes, or
-  rewords original clinical content; it reorganizes and labels original
-  content, and only includes accepted suggestions under a clearly marked
-  "Added on review" section. A content-presence verification step confirms
-  every original sentence remains present in the structured output before
-  the export is accepted. Verified by the Phase 7 test coverage and the
-  project test suite.
+  when no guideline match exists. Must never add, remove, or reword
+  clinical content; only reorganize and label it. Include a verification
+  step confirming every sentence of the original document is still
+  present in the structured output. Done = a high-scoring document and a
+  no-match document both produce a cleanly structured export with zero
+  content loss, confirmed by the verification step, not just visual
+  inspection.
 
-- [ ] **Phase 8 — Evaluation & monitoring, fully wired.** Langfuse tracing
-  across every layer (extraction, retrieval, comparison, scoring,
-  formatting) — not only the pieces already traced. The Ragas evaluation
-  set and the golden/determinism set (Phases 3 and 5) become a permanent,
-  scheduled part of CI rather than a manually-run check. Done = a Langfuse
-  trace exists for a real run touching every layer, and both evaluation
-  sets run automatically on a schedule or on every merge to `main`.
+- [ ] **Phase 8 — Evaluation & monitoring, fully wired.** Reopened
+  2026-09-24 after a more rigorous audit found the earlier "complete"
+  call premature — recorded here as history, not erased (see decision
+  log). What's actually confirmed solid: Langfuse trace
+  `d1e566fba19ae61c413076e6dcf580c5` covers every required stage;
+  `pip-audit` is clean with two documented, justified exceptions in
+  `SECURITY_NOTES.md` (`PYSEC-2026-2447`, `PYSEC-2026-3046`, neither
+  exploitable given actual usage, no upstream fix available). What's
+  still genuinely open: the Ragas evaluation design was flawed —
+  Faithfulness was being fed hand-authored extraction evidence and
+  workflow rules alongside the retrieved guideline, which means a
+  passing score didn't actually prove suggestions are grounded in the
+  guideline alone, and Context Precision was evaluated against one
+  pre-selected passage rather than a real candidate/ranked set. A fix is
+  in progress, uncommitted, in `tests/eval/ragas_cases.json` and
+  `tests/eval/run_ragas.py` — review what's there before continuing,
+  don't discard or blindly extend it. Also still open: push the current
+  branch (nothing has been pushed since the pip-audit fix), confirm a
+  real green GitHub Actions run on the current worktree (the last remote
+  run, `37203953760`, failed and predates these fixes). New done
+  criteria = Ragas's Faithfulness metric evaluates suggestions against
+  guideline-only context (no hand-authored evidence mixed in), Context
+  Precision evaluates against a real candidate/ranked passage set, both
+  still clear their thresholds, and a real GitHub Actions run on the
+  pushed branch is green.
 
 - [ ] **Phase 9 — Containerization, CI & security gates.** Dockerfile(s) +
   docker-compose for the full backend stack (API, vector store, database,
   Ollama); GitHub Actions running tests, lint, type-check, `bandit`,
-  `pip-audit`, and both evaluation sets on every PR. Done = `docker
-  compose up` runs the whole backend from a clean checkout, CI fully
-  green end-to-end.
+  `pip-audit`, and both evaluation sets on every PR. Also replace the
+  manual startup `ALTER TABLE` schema logic in `db.py` with a versioned
+  migration tool (e.g. Alembic) — flagged during Phase 8's audit as a
+  concurrency risk worth fixing before containers can run as more than
+  one instance. Done = `docker compose up` runs the whole backend from a
+  clean checkout, CI fully green end-to-end, and schema changes apply via
+  migrations, not ad hoc startup logic.
 
-- [ ] **Phase 10 — Frontend.** Final decision: Next.js + HeroUI. The
-  frontend is not scaffolded or modified yet; it remains deferred until the
-  Phase 10 work begins. It consumes the API exactly as specified in
-  AGENTS.md's "API design for live interaction" section (see Phase 6's
-  requirement update) — no backend changes should be needed to support it.
-  Phases 8 and 9 do not depend on this decision and can proceed first if
-  useful.
+- [ ] **Phase 10 — Frontend.** On hold. Scoped as its own item once Krish
+  decides between Streamlit and Next.js + HeroUI. Whichever is chosen, it
+  consumes the API exactly as specified in AGENTS.md's "API design for
+  live interaction" section (see Phase 6's requirement update) — no
+  backend changes should be needed to support it. Phases 8 and 9 do not
+  depend on this decision and can proceed first if useful.
 
 - [ ] **Phase 11 — Deployment & cloud-LLM provider-swap validation.**
   Deploy the backend (and, once built, the frontend) to Render or
@@ -277,5 +309,23 @@ silently expanding a phase that's already "done."
   original requirement update assumed — pending a direct one-line
   confirmation before ARCHITECTURE.md's AI-processing layer description
   is changed to match.
+- 2026-09-24 — Krish directly confirmed the frontend as finalized:
+  Next.js + HeroUI. Updated AGENTS.md and ARCHITECTURE.md to state this
+  as decided rather than deferred. The open item above (algorithmic vs.
+  LLM-based scoring) remains unresolved — was never actually answered,
+  and is being deprioritized as a non-blocking documentation detail
+  rather than chased further.
+- 2026-09-24 — Phase 8 reopened after being marked complete earlier the
+  same day. A more rigorous audit (prompted by Krish explicitly asking
+  for zero-gap verification) found the Ragas Faithfulness metric was
+  being fed hand-authored extraction evidence alongside the retrieved
+  guideline, which meant a passing score didn't prove groundedness in
+  the guideline alone. Also found: ARCHITECTURE.md described Langfuse as
+  tracing "every prompt/response," which doesn't match the actual
+  metadata-only implementation — corrected to state the metadata-only
+  design explicitly, as a deliberate privacy decision, not a gap. Also
+  flagged: the report table's schema uses manual startup `ALTER TABLE`
+  logic, which should become a versioned migration before Phase 9/11 -
+  added to Phase 9's scope rather than fixed mid-Phase-8.
 - *(add new entries here as real decisions get made — one line, with the
   reason)*

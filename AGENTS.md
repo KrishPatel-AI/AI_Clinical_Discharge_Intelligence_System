@@ -29,26 +29,29 @@ happens to be accurate for the cases they actually see.
 
 ## Approved stack — do not change without flagging it first
 - Backend: Python, FastAPI
-- Frontend: undecided at this time — see the Frontend framework note below.
-  Do not build or modify any frontend code until Phase 10. See STATUS.md
-  for the current phase and this file's Phase 10 design brief below.
+- Frontend: **finalized as Next.js + HeroUI**, confirmed directly by
+  Krish on 2026-09-24. Do not build or modify any frontend code until
+  Phase 10 regardless — see STATUS.md for the current phase and this
+  file's Phase 10 design brief below, which still applies in full now
+  that the framework is decided.
 - AI orchestration: LangChain + LangGraph
 - LLM runtime: Ollama, local, for development and initial deployment
 - Vector store: ChromaDB or FAISS (guideline knowledge base)
 - Relational store: PostgreSQL (users, reports, audit logs, dashboard metrics)
-- Observability: Langfuse (tracing every prompt/response/latency/error),
-  Ragas (RAG quality evaluation)
+- Observability: Langfuse (traces operation metadata — stage, status,
+  latency, trace/observation IDs — across every pipeline layer; raw
+  clinical text and PHI are never sent to Langfuse, by design, per the
+  no-PHI-leaves-the-boundary rule elsewhere in this file), Ragas (RAG
+  quality evaluation)
 - Containerization / CI: Docker, GitHub Actions
 - Deployment target: Render or Railway
 
-## Frontend framework note (deferred — do not act on this yet)
-Krish is considering Next.js + HeroUI (React, Tailwind-based, free/open
-source, built-in light/dark theming) as a replacement for Streamlit, and
-separately may move between VS Code/Copilot, Cursor, or an
-Antigravity/Gemini-based setup for the coding itself. Neither decision
-changes anything in this file's scope: FastAPI already exposes a decoupled
-JSON API, so a frontend swap is a Phase 10 concern only. What earlier
-phases must do to keep that swap low-risk later:
+## Frontend framework — decided, Phase 10 still not started
+Next.js + HeroUI is confirmed as final, directly by Krish, not inferred or
+chosen by an agent. This does not change when Phase 10 starts: FastAPI
+already exposes a decoupled JSON API, so building the frontend now would
+still be premature relative to the phase sequence in STATUS.md. What
+earlier phases must do to keep Phase 10 low-friction when it starts:
 - Keep all API responses as typed Pydantic models (already required).
 - Enable CORS on the FastAPI app, configurable by allowed-origin list via
   environment variable, even though nothing depends on it yet.
@@ -56,12 +59,13 @@ phases must do to keep that swap low-risk later:
   interaction" section below — a live-updating frontend (Streamlit,
   Next.js, or anything else) needs per-suggestion endpoints, not just a
   single upload-and-return call.
-Do not pick or scaffold a frontend framework before Phase 10.
+Do not scaffold the frontend before Phase 10, even though the framework
+is decided.
 
 ## Phase 10 design brief (reference only — do not act on this before Phase 10)
-Recorded now, ahead of time, so these requirements aren't lost or
-re-derived from scratch once the frontend framework is actually chosen.
-None of this authorizes starting frontend work early.
+Recorded now, ahead of time, against the confirmed Next.js + HeroUI
+choice, so these requirements aren't lost before Phase 10 starts. None of
+this authorizes starting frontend work early.
 - **Visual direction:** noise-free, minimalist, and modern — a dashboard
   feel, not a form-heavy admin panel. Krish has specifically pointed to
   the Claude app's UI/UX as a reference for the *quality bar and
@@ -82,13 +86,11 @@ None of this authorizes starting frontend work early.
   throughout the interface — no jargon-for-its-own-sake, no marketing
   copy, no unexplained abbreviations.
 - **Navigation:** doctors should be able to reach any part of the system
-  in a small, predictable number of steps, using whatever routing/
-  navigation conventions are standard for the chosen framework at the
-  time (e.g. Next.js App Router conventions, if that's the eventual
-  choice) rather than a custom-invented pattern.
-- **Dark mode and light mode are both required**, regardless of which
-  frontend framework is ultimately chosen — this is a product requirement,
-  not something contingent on HeroUI specifically.
+  in a small, predictable number of steps, using Next.js App Router
+  conventions rather than a custom-invented navigation pattern.
+- **Dark mode and light mode are both required.** This is a product
+  requirement in its own right, not something contingent on HeroUI
+  happening to support it.
 - **Live interaction, backed by the API already specified below:** the
   original document and the doctor-edited final document shown side by
   side, updating live as the doctor accepts or ignores each suggestion
@@ -144,21 +146,20 @@ LLMs to accept. Concretely:
   no-match guardrail in the RAG evaluation section), never a silent guess.
 
 ## Guideline knowledge base — sourcing and structure
-Krish does not have guideline data yet. This is Phase 1's job, not assumed
-to already exist. Do not fabricate or invent guideline content — only use
-real, sourced documents, and prioritize Indian sources specifically (see
-Regional scope above):
-- Primary candidates to evaluate in Phase 1: ICMR (Indian Council of
-  Medical Research, icmr.gov.in) Standard Treatment Guidelines, which
-  cover many relevant categories (e.g. Hypertension, Respiratory
-  conditions, Diabetic Foot, Endocrinology, Paediatrics) — verify current
-  reproduction/redistribution terms before ingesting, since ICMR
-  publications carry a notice requiring permission for reproduction or
-  distribution, even though the documents are publicly readable. Also
-  evaluate National Health Mission / National Health Systems Resource
-  Centre (NHSRC) adapted Standard Treatment Guidelines, which exist for
-  several common conditions and were explicitly adapted for Indian
-  clinical practice.
+Seven India-sourced guideline documents are already ingested (verified
+2026-09-23), covering asthma, diabetes, and high-blood-pressure, drawn
+from ICMR (Indian Council of Medical Research) and/or National Health
+Mission / NHSRC Standard Treatment Guidelines. Do not fabricate or invent
+guideline content when expanding coverage — only use real, sourced
+documents, and keep prioritizing Indian sources specifically (see
+Regional scope above). The authoritative record of exactly which
+document, source, retrieval date, and licensing terms apply to each
+diagnosis is `knowledge_base/guidelines/<diagnosis-slug>/metadata.json`
+— check that directly rather than assuming from this summary when it
+matters (e.g. before redistributing or publishing anything derived from
+these documents; ICMR publications specifically carry a notice requiring
+permission for reproduction or distribution, and the metadata records
+that constraint rather than asserting unrestricted reuse).
 - Guidelines live under `/knowledge_base/guidelines/<diagnosis-slug>/`,
   one folder per diagnosis, each with the source document(s) and a
   metadata file (source name, URL, date retrieved, diagnosis name/
