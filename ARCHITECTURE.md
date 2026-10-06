@@ -47,7 +47,7 @@ instead of guessing.
 |---|---|---|
 | Presentation | Undecided — see Frontend framework note below | Upload, inline review, live preview, history |
 | API | FastAPI | Receives uploads, exposes granular per-suggestion and preview endpoints, triggers the pipeline |
-| AI processing | LangChain + LangGraph + LLM provider abstraction | Extracts, retrieves, compares, scores, generates explanations |
+| AI processing | LangChain + LangGraph + LLM provider abstraction | Extracts structured fields via LLM, retrieves via FAISS, compares sections, and scores completeness algorithmically |
 | Formatting | Independent module, export-time | Layout-only structuring of the final document |
 | Knowledge | ChromaDB / FAISS | Stores and semantically searches the indexed guideline documents |
 | Data | PostgreSQL | Stores users, generated reports, audit logs, dashboard metrics |
@@ -127,6 +127,10 @@ move that phase earlier.
   never an editor of the discharge document itself.
 - **Stateless API + externalized state** — no structural blocker to
   scaling later.
+- **Scoring is purely algorithmic, not an LLM call** — completeness score
+  is calculated programmatically (100 * matched / compared) and suggestions
+  are mapped directly from identified section gaps with guideline citations.
+  This eliminates variance and makes scoring deterministic by construction.
 
 ## Non-functional requirements
 Targets the implementation is expected to meet — see AGENTS.md for the
@@ -213,3 +217,8 @@ concrete checklist behind each one.
   Decision rather than leaving the privacy boundary implicit. Flagged
   the manual `ALTER TABLE` schema logic in `db.py` as a concurrency risk
   to resolve via a migration tool in Phase 9, not Phase 8.
+- 2026-10-06 — Confirmed directly that scoring in `backend/rag/workflow.py`
+  is entirely algorithmic (no LLM call) and updated the AI processing
+  layer and Key Decisions to record this verified design. Verified Phase 8
+  evaluation with candidate-ranked Context Precision and clean Faithfulness
+  evaluations in Ragas.

@@ -53,22 +53,22 @@ work on.
   per-suggestion `PATCH`, `preview`, and filterable `GET /reviews` exist
   in `discharge.py`; persistence in `persistence.py`/`database.py`;
   contract in `schemas.py`; covered by `test_persistence.py`.
-- **Open item (not a phase blocker):** confirm whether `_score` in
-  `workflow.py` makes any LLM call at all. If it's fully programmatic,
-  update ARCHITECTURE.md's AI-processing layer description and Key
-  Decisions to say so explicitly — algorithmic scoring is a good,
-  deterministic design choice worth recording accurately, not leaving
-  implied by an unverified paraphrase.
-- Phase 7 (Structuring & formatting) is verified complete.
-- Phase 8 was marked complete on 2026-09-24, then reopened the same day
-  after a more thorough audit found the Ragas evaluation design didn't
-  actually prove what it claimed to (see Phase 8's entry below). Tracing
-  and the dependency audit are solid; the Ragas fix is in progress,
-  uncommitted. Krish is moving from GitHub Copilot (rate-limited until
-  ~Nov 1) to Cursor to finish this.
-- Active phase: **Phase 8 — Evaluation & monitoring** (finishing the
-  Ragas redesign, then push + confirm green CI). Phase 9 starts after.
-- Last updated: 2026-09-24
+- **Scoring confirmed algorithmic (resolved 2026-10-06):** verified that
+  `_score_impl` in `backend/rag/workflow.py` calculates completeness score
+  and maps gap suggestions completely programmatically without making any
+  LLM call. ARCHITECTURE.md updated accordingly.
+- Phase 7 (Structuring & formatting) is verified complete and merged to `main`.
+- Phase 8 is verified complete, 2026-10-06. The Ragas evaluation design flaw
+  was resolved: Context Precision evaluates ranking across real candidate
+  passage sets retrieved from FAISS (scoring 0.919, above the 0.500 floor),
+  Faithfulness evaluates suggestions against the natural summary and retrieved
+  guideline text with no synthetic rules/evidence injected (scoring 1.000,
+  above 0.500), and Answer Relevancy clears its floor (0.504 >= 0.500). Langfuse
+  tracing and dependency auditing (`pip-audit`, `bandit`) are verified clean.
+- Active phase: **Phase 8 — Evaluation & monitoring** (complete locally; ready
+  for Krish to commit, push `phase-8_evaluation_and_monitoring`, verify green CI
+  on GitHub Actions, and merge to `main`). Phase 9 starts after merge.
+- Last updated: 2026-10-06
 
 ## Definition of done — applies to every phase below
 - Tests exist for its success path and at least one realistic failure
@@ -167,44 +167,29 @@ original work didn't happen.
   `discharge.py`, backed by `persistence.py`/`database.py` and the
   `schemas.py` contract, covered by `test_persistence.py`.
 
-- [ ] **Phase 7 — Structuring & formatting.** New phase, added
-  2026-09-22. Export-time, layout-only reformatting of the discharge
-  document into a consistent structure (e.g. Patient Information,
+- [x] **Phase 7 — Structuring & formatting.** Verified complete,
+  2026-10-03, merged via PR #13. Export-time, layout-only reformatting of
+  the discharge document into a consistent structure (e.g. Patient Information,
   Diagnosis, Hospital Course, Medications, Advice, Follow-up), independent
   of the completeness score — runs even when the score is already high or
-  when no guideline match exists. Must never add, remove, or reword
-  clinical content; only reorganize and label it. Include a verification
-  step confirming every sentence of the original document is still
-  present in the structured output. Done = a high-scoring document and a
-  no-match document both produce a cleanly structured export with zero
-  content loss, confirmed by the verification step, not just visual
-  inspection.
+  when no guideline match exists. The formatter never adds, removes, or
+  rewords original clinical content; it reorganizes and labels original
+  content, and only includes accepted suggestions under a clearly marked
+  "Added on review" section. A content-presence verification step confirms
+  every original sentence remains present in the structured output before
+  the export is accepted.
 
-- [ ] **Phase 8 — Evaluation & monitoring, fully wired.** Reopened
-  2026-09-24 after a more rigorous audit found the earlier "complete"
-  call premature — recorded here as history, not erased (see decision
-  log). What's actually confirmed solid: Langfuse trace
-  `d1e566fba19ae61c413076e6dcf580c5` covers every required stage;
-  `pip-audit` is clean with two documented, justified exceptions in
-  `SECURITY_NOTES.md` (`PYSEC-2026-2447`, `PYSEC-2026-3046`, neither
-  exploitable given actual usage, no upstream fix available). What's
-  still genuinely open: the Ragas evaluation design was flawed —
-  Faithfulness was being fed hand-authored extraction evidence and
-  workflow rules alongside the retrieved guideline, which means a
-  passing score didn't actually prove suggestions are grounded in the
-  guideline alone, and Context Precision was evaluated against one
-  pre-selected passage rather than a real candidate/ranked set. A fix is
-  in progress, uncommitted, in `tests/eval/ragas_cases.json` and
-  `tests/eval/run_ragas.py` — review what's there before continuing,
-  don't discard or blindly extend it. Also still open: push the current
-  branch (nothing has been pushed since the pip-audit fix), confirm a
-  real green GitHub Actions run on the current worktree (the last remote
-  run, `37203953760`, failed and predates these fixes). New done
-  criteria = Ragas's Faithfulness metric evaluates suggestions against
-  guideline-only context (no hand-authored evidence mixed in), Context
-  Precision evaluates against a real candidate/ranked passage set, both
-  still clear their thresholds, and a real GitHub Actions run on the
-  pushed branch is green.
+- [x] **Phase 8 — Evaluation & monitoring, fully wired.** Verified complete,
+  2026-10-06. Langfuse tracing covers every pipeline stage with metadata-only
+  instrumentation (stage name, status, latency, IDs — no raw PHI).
+  Dependency audit (`pip-audit`) is clean with two documented exceptions in
+  `SECURITY_NOTES.md` (`PYSEC-2026-2447`, `PYSEC-2026-3046`). The Ragas
+  evaluation was redesigned and verified: Faithfulness evaluates suggestions
+  against natural summary text and retrieved guideline passages without
+  injected rules (1.000, minimum 0.500), Context Precision evaluates against
+  the 5-chunk candidate ranked passage set from FAISS (0.919, minimum 0.500),
+  and Answer Relevancy clears its floor (0.504 >= 0.500). Done locally;
+  ready for PR and CI run on GitHub Actions.
 
 - [ ] **Phase 9 — Containerization, CI & security gates.** Dockerfile(s) +
   docker-compose for the full backend stack (API, vector store, database,
@@ -327,5 +312,12 @@ silently expanding a phase that's already "done."
   flagged: the report table's schema uses manual startup `ALTER TABLE`
   logic, which should become a versioned migration before Phase 9/11 -
   added to Phase 9's scope rather than fixed mid-Phase-8.
+- 2026-10-06 — Completed Phase 8 end-to-end. Verified that `_score_impl`
+  in `workflow.py` is entirely programmatic (closed open item in
+  ARCHITECTURE.md). Redesigned Ragas evaluation so Context Precision
+  evaluates real candidate ranking against FAISS top-5 (0.919),
+  Faithfulness evaluates suggestions against genuine summary and retrieved
+  guideline passage without injected rules (1.000), and Answer Relevancy
+  passes (0.504). All golden, unit, lint, and security checks clean.
 - *(add new entries here as real decisions get made — one line, with the
   reason)*

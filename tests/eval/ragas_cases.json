@@ -5,36 +5,39 @@
       "extraction": {
         "diagnosis": "Asthma"
       },
+      "source_document": "Diagnosis: Asthma. Medication: Not documented. Follow-up: Not documented. Warning signs: Not documented.",
       "expected_suggestion_sections": [
         "medications",
         "follow_up_requirements",
         "warning_signs"
       ],
-      "reference": "The matched guideline is compared with the extracted diagnosis, medication, follow-up, and warning-sign sections. Missing sections are listed for doctor review."
+      "reference": "Asthma guideline passage discussing pulmonary rehabilitation, vaccination, antibiotic prevention, and asthma management during pregnancy."
     },
     {
       "name": "type 2 diabetes diagnosis only",
       "extraction": {
         "diagnosis": "Type 2 diabetes mellitus"
       },
+      "source_document": "Diagnosis: Type 2 diabetes mellitus. Medication: Not documented. Follow-up: Not documented. Warning signs: Not documented.",
       "expected_suggestion_sections": [
         "medications",
         "follow_up_requirements",
         "warning_signs"
       ],
-      "reference": "The matched guideline is compared with the extracted diagnosis, medication, follow-up, and warning-sign sections. Missing sections are listed for doctor review."
+      "reference": "Diabetes guideline passage classifying type 1 and type 2 diabetes and describing type 2 diabetes as insulin resistance and abnormal insulin secretion."
     },
     {
       "name": "adult hypertension diagnosis only",
       "extraction": {
         "diagnosis": "Hypertension in adults"
       },
+      "source_document": "Diagnosis: Hypertension in adults. Medication: Not documented. Follow-up: Not documented. Warning signs: Not documented.",
       "expected_suggestion_sections": [
         "medications",
         "follow_up_requirements",
         "warning_signs"
       ],
-      "reference": "The matched guideline is compared with the extracted diagnosis, medication, follow-up, and warning-sign sections. Missing sections are listed for doctor review."
+      "reference": "Guideline passage specifying the scope, objectives, adult population, assessment, follow-up, and treatment of adult hypertension."
     }
   ],
   "no_match_case": {
