@@ -77,7 +77,8 @@ def _build_review_rows(index_dir: Path) -> tuple[list[dict[str, Any]], int]:
             f"Review findings for {extraction.diagnosis}:\n"
             + "\n".join(
                 [
-                    f"- Suggestion for {suggestion.section.replace('_', ' ')}: "
+                    f"- {suggestion.section.replace('_', ' ')}: "
+                    "Not documented in discharge summary; "
                     f"{suggestion.explanation}"
                     for suggestion in review.suggestions
                 ]
