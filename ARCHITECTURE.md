@@ -36,8 +36,6 @@ instead of guessing.
 7. **Structure & format (export-time)** — independent of the score,
    the document is reorganized into a consistent, labeled structure
    (layout only, no content changes) as part of producing the export.
-   This phase is implemented as a dedicated formatting stage and verifies
-   that original sentences remain present before export is accepted.
 8. **Export** — the doctor previews, then downloads, the final reviewed
    and structured document as PDF, DOCX, or TXT. A complete audit record
    is saved: timestamp, completeness score, every suggestion generated,
@@ -47,13 +45,13 @@ instead of guessing.
 
 | Layer | Technology | Responsibility |
 |---|---|---|
-| Presentation | Next.js + HeroUI (Phase 10; not yet built) | Upload, inline review, live preview, history |
+| Presentation | Undecided — see Frontend framework note below | Upload, inline review, live preview, history |
 | API | FastAPI | Receives uploads, exposes granular per-suggestion and preview endpoints, triggers the pipeline |
-| AI processing | LangChain + LangGraph + LLM provider abstraction | Extracts, retrieves, compares, scores, generates explanations |
+| AI processing | LangChain + LangGraph + LLM provider abstraction | Extracts structured fields via LLM, retrieves via FAISS, compares sections, and scores completeness algorithmically |
 | Formatting | Independent module, export-time | Layout-only structuring of the final document |
 | Knowledge | ChromaDB / FAISS | Stores and semantically searches the indexed guideline documents |
 | Data | PostgreSQL | Stores users, generated reports, audit logs, dashboard metrics |
-| Monitoring (cross-cutting) | Langfuse, Ragas | Traces every prompt/response; evaluates retrieval quality, faithfulness, answer relevance, context precision |
+| Monitoring (cross-cutting) | Langfuse, Ragas | Traces operation metadata (stage, status, latency, trace/observation IDs) across every layer — never raw clinical text or PHI; evaluates retrieval quality, faithfulness, answer relevance, context precision |
 
 ## Guideline data — status: sourced (verified 2026-09-23)
 This system is scoped specifically for Indian hospitals and Indian
@@ -85,20 +83,31 @@ unrestricted redistribution is allowed.
   set and the golden/determinism test set, and compare against the
   Ollama baseline.
 
-## Frontend framework — final decision: Next.js + HeroUI (Phase 10)
-The frontend stack is finalized as Next.js with HeroUI, a free,
-open-source React component library built on Tailwind CSS with built-in
-light/dark theming. This is a Phase 10 decision only, and the frontend is
-not scaffolded or modified before that phase begins.
+## Frontend framework — finalized: Next.js + HeroUI
+Confirmed directly by Krish on 2026-09-24. Streamlit was the original
+choice for speed of iteration; Next.js + HeroUI (a free, open-source,
+accessible React component library built on Tailwind CSS, with built-in
+light/dark theming) replaces it, primarily for finer-grained control over
+layout, inline diff interactions, and live preview than Streamlit's real
+ceiling allowed.
 
-This does not affect Phases 1-7: FastAPI already exposes a decoupled
-JSON API (see the API design section in AGENTS.md), so the frontend is
-swappable without changing backend logic, as long as CORS is enabled and
-the granular per-suggestion/preview endpoints exist. The frontend work is
-still deferred until Phase 10, while the backend remains the active
-implementation track.
+This decision did not affect Phases 1-9: FastAPI already exposes a
+decoupled JSON API (see the API design section in AGENTS.md), so the
+frontend is swappable without touching backend logic, as long as CORS is
+enabled and the granular per-suggestion/preview endpoints exist — both
+already required elsewhere in this document. Phase 10 (see STATUS.md) is
+where this actually gets built; the framework being decided now does not
+move that phase earlier.
 
 ## Key decisions and why
+- **Langfuse traces metadata only, never raw clinical text.** Every
+  pipeline stage (extraction, retrieval, comparison, scoring,
+  structuring, verification, export) is instrumented, but what's sent to
+  Langfuse is stage name, status, latency, and trace/observation IDs —
+  not the discharge summary content or any extracted clinical field. This
+  is a deliberate application of the no-PHI-leaves-the-boundary rule to
+  the monitoring layer specifically, not an oversight to be "fixed" by
+  sending more detail later.
 - **Ollama as the default LLM runtime, swappable by design, temperature
   pinned to 0** — avoids per-request cost and rate limits during
   development; determinism is required because doctors need consistent,
@@ -118,6 +127,10 @@ implementation track.
   never an editor of the discharge document itself.
 - **Stateless API + externalized state** — no structural blocker to
   scaling later.
+- **Scoring is purely algorithmic, not an LLM call** — completeness score
+  is calculated programmatically (100 * matched / compared) and suggestions
+  are mapped directly from identified section gaps with guideline citations.
+  This eliminates variance and makes scoring deterministic by construction.
 
 ## Non-functional requirements
 Targets the implementation is expected to meet — see AGENTS.md for the
@@ -147,7 +160,11 @@ concrete checklist behind each one.
   without a full resubmission (see AGENTS.md for the endpoint list).
 - **Maintainability:** one approved backend stack, one folder layout,
   guidelines added/changed by folder — not code — changes, this document
-  kept current.
+  kept current. Known item before deployment: the report table's schema
+  is currently applied via manual startup `ALTER TABLE` logic in
+  `db.py`, which can race under concurrent app instances. Replacing this
+  with a versioned migration tool (e.g. Alembic) is flagged for Phase 9
+  or 11 (see STATUS.md), not required for Phase 8.
 - **UI/UX (Phase 10, not yet built):** minimalist, modern, dashboard-style,
   free of the generic "AI tool" look, with both light and dark mode
   required regardless of framework — full detail in AGENTS.md's
@@ -193,3 +210,15 @@ concrete checklist behind each one.
   scoring may be fully algorithmic rather than LLM-based — that specific
   claim is logged as an open item in STATUS.md pending a direct
   one-line confirmation, not assumed from a paraphrase.
+- 2026-09-24 — Finalized the frontend section as Next.js + HeroUI per
+  Krish's direct confirmation (previously stated as deferred). Corrected
+  the Langfuse description from "traces every prompt/response" to the
+  actual metadata-only behavior, and recorded it as a deliberate Key
+  Decision rather than leaving the privacy boundary implicit. Flagged
+  the manual `ALTER TABLE` schema logic in `db.py` as a concurrency risk
+  to resolve via a migration tool in Phase 9, not Phase 8.
+- 2026-10-06 — Confirmed directly that scoring in `backend/rag/workflow.py`
+  is entirely algorithmic (no LLM call) and updated the AI processing
+  layer and Key Decisions to record this verified design. Verified Phase 8
+  evaluation with candidate-ranked Context Precision and clean Faithfulness
+  evaluations in Ragas.

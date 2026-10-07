@@ -25,11 +25,12 @@ from backend.config import (
 )
 from backend.models.schemas import DischargeExtraction
 from backend.rag.workflow import review_extraction
-from knowledge_base.ingest import DEFAULT_INDEX_DIR, build_index
+from knowledge_base.ingest import DEFAULT_INDEX_DIR, build_index, query_index
 
 EVAL_DIR = Path(__file__).parent
 CASES_PATH = EVAL_DIR / "ragas_cases.json"
 THRESHOLDS_PATH = EVAL_DIR / "ragas_thresholds.json"
+CANDIDATE_LIMIT = 5
 
 
 class OllamaStructuredEvaluator(InstructorBaseRagasLLM):
@@ -66,44 +67,38 @@ def _build_review_rows(index_dir: Path) -> tuple[list[dict[str, Any]], int]:
                 f"{suggestion_sections}"
             )
 
+        source_document = case["source_document"]
         user_input = (
-            f"Review this synthetic discharge summary for {extraction.diagnosis}. "
-            "Only the diagnosis is present; medication, follow-up, and "
-            "warning-sign details were not extracted."
+            "Review this synthetic discharge summary for "
+            f"{extraction.diagnosis} and identify missing sections for "
+            f"doctor review: {source_document}"
         )
-        response = json.dumps(
-            {
-                "status": review.status,
-                "completeness_score": review.completeness_score,
-                "comparison_statuses": [
-                    {"section": item.section, "status": item.status}
-                    for item in review.comparisons
-                ],
-                "suggestion_sections": suggestion_sections,
-            },
-            sort_keys=True,
+        response = (
+            f"Review findings for {extraction.diagnosis}:\n"
+            + "\n".join(
+                [
+                    f"- {suggestion.section.replace('_', ' ')}: "
+                    "Not documented in discharge summary; "
+                    f"{suggestion.explanation}"
+                    for suggestion in review.suggestions
+                ]
+            )
         )
-        extraction_evidence = (
-            "Structured fields actually supplied to the review: "
-            + json.dumps(extraction.model_dump(), sort_keys=True)
-            + ". Empty arrays mean no value was extracted for that section."
+        candidate_result = query_index(
+            extraction.diagnosis,
+            index_dir=index_dir,
+            limit=CANDIDATE_LIMIT,
         )
-        review_rules = (
-            "The workflow compares diagnosis, medications, follow_up_requirements, "
-            "and warning_signs. A comparison is matched only when extracted values "
-            "share tokens with the retrieved guideline; otherwise its status is gap. "
-            "Completeness is 100 times matched sections divided by the number of "
-            "compared sections. Suggestions are emitted for gap sections."
-        )
+        candidate_passages = [str(doc) for doc in candidate_result["documents"]]
+
         rows.append(
             {
                 "name": case["name"],
                 "user_input": user_input,
                 "response": response,
-                "retrieved_contexts": [review.guideline.passage],
+                "candidate_contexts": candidate_passages,
                 "faithfulness_contexts": [
-                    extraction_evidence,
-                    review_rules,
+                    f"Original discharge summary: {source_document}",
                     review.guideline.passage,
                 ],
                 "reference": case["reference"],
@@ -138,13 +133,13 @@ async def _score_rows(rows: list[dict[str, Any]]) -> dict[str, list[float]]:
     scores: dict[str, list[float]] = {name: [] for name in metrics}
     for row in rows:
         for name, metric in metrics.items():
-            metric_input = {
+            metric_input: dict[str, Any] = {
                 "user_input": row["user_input"],
             }
             if name == "faithfulness":
                 metric_input["retrieved_contexts"] = row["faithfulness_contexts"]
             elif name == "context_precision":
-                metric_input["retrieved_contexts"] = row["retrieved_contexts"]
+                metric_input["retrieved_contexts"] = row["candidate_contexts"]
             if name != "context_precision":
                 metric_input["response"] = row["response"]
             if name == "context_precision":
@@ -174,6 +169,13 @@ def main() -> None:
         mean_score = sum(values) / len(values)
         threshold = float(thresholds[name])
         print(f"{name}: {mean_score:.3f} (minimum {threshold:.3f})")
+        for case, value in zip(rows, values):
+            print(f"  {case['name']}: {value:.3f}")
+            if value < threshold:
+                failures.append(
+                    f"{name} ({case['name']}): score {value:.3f} "
+                    f"is below minimum {threshold:.3f}"
+                )
         if mean_score < threshold:
             failures.append(
                 f"{name}: score {mean_score:.3f} is below minimum {threshold:.3f}"
