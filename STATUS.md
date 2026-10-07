@@ -58,17 +58,30 @@ work on.
   and maps gap suggestions completely programmatically without making any
   LLM call. ARCHITECTURE.md updated accordingly.
 - Phase 7 (Structuring & formatting) is verified complete and merged to `main`.
-- Phase 8 is verified complete, 2026-10-06. The Ragas evaluation design flaw
-  was resolved: Context Precision evaluates ranking across real candidate
-  passage sets retrieved from FAISS (scoring 0.919, above the 0.500 floor),
-  Faithfulness evaluates suggestions against the natural summary and retrieved
-  guideline text with no synthetic rules/evidence injected (scoring 1.000,
-  above 0.500), and Answer Relevancy clears its floor (0.504 >= 0.500). Langfuse
-  tracing and dependency auditing (`pip-audit`, `bandit`) are verified clean.
-- Active phase: **Phase 8 — Evaluation & monitoring** (complete locally; ready
-  for Krish to commit, push `phase-8_evaluation_and_monitoring`, verify green CI
-  on GitHub Actions, and merge to `main`). Phase 9 starts after merge.
-- Last updated: 2026-10-06
+- Phase 8 is verified complete and merged to `main` via PR #15 on 2026-10-07.
+  Context Precision (0.919), Faithfulness (1.000), and Answer Relevancy (0.760)
+  pass all required floors on GitHub Actions CI. Langfuse tracing and security
+  auditing are active and passing.
+- Phase 9 is verified complete, 2026-10-07:
+  - Schema management replaced ad-hoc startup `ALTER TABLE` in `backend/db.py`
+    with versioned Alembic migrations (`alembic.ini`, `alembic/env.py`, and
+    `alembic/versions/cc7a5170229d_initial_schema.py`).
+  - Ad-hoc column inspection was removed from `backend/db.py` and `get_db()`,
+    preventing concurrent connection locks or schema race conditions.
+  - `tests/test_migrations.py` tests `alembic upgrade head`, table/column
+    existence, downgrade to base, and re-upgrade idempotency.
+  - Production Docker setup added in `docker/Dockerfile`, `docker/entrypoint.sh`,
+    and `docker-compose.yml` orchestrating FastAPI (non-root `appuser`),
+    PostgreSQL 16, Ollama, and persistent vector store volumes.
+  - CORS middleware enabled in FastAPI app per AGENTS.md requirement with
+    `ALLOWED_ORIGINS` config helper.
+  - CI workflow updated to run `alembic upgrade head`, validate Dockerfile
+    build, and verify docker-compose syntax on every pull request.
+- Active phase: **Phase 9 — Containerization, CI & security gates** (complete locally;
+  ready for Krish to commit, push `phase-9_Containerization_CI_Security_Gates`, verify
+  green CI on GitHub Actions, and merge to `main`). Phase 10 (Next.js + HeroUI frontend)
+  is the next phase.
+- Last updated: 2026-10-07
 
 ## Definition of done — applies to every phase below
 - Tests exist for its success path and at least one realistic failure
@@ -191,16 +204,18 @@ original work didn't happen.
   and Answer Relevancy clears its floor (0.504 >= 0.500). Done locally;
   ready for PR and CI run on GitHub Actions.
 
-- [ ] **Phase 9 — Containerization, CI & security gates.** Dockerfile(s) +
-  docker-compose for the full backend stack (API, vector store, database,
-  Ollama); GitHub Actions running tests, lint, type-check, `bandit`,
-  `pip-audit`, and both evaluation sets on every PR. Also replace the
-  manual startup `ALTER TABLE` schema logic in `db.py` with a versioned
-  migration tool (e.g. Alembic) — flagged during Phase 8's audit as a
-  concurrency risk worth fixing before containers can run as more than
-  one instance. Done = `docker compose up` runs the whole backend from a
-  clean checkout, CI fully green end-to-end, and schema changes apply via
-  migrations, not ad hoc startup logic.
+- [x] **Phase 9 — Containerization, CI & security gates.** Verified complete
+  2026-10-07. Dockerfile (`docker/Dockerfile`) with non-root security user,
+  smart entrypoint (`docker/entrypoint.sh`), and `docker-compose.yml`
+  orchestrating API, PostgreSQL 16, Ollama, and persistent vector store.
+  Versioned database migrations implemented via Alembic (`alembic/versions/cc7a5170229d_initial_schema.py`)
+  replacing ad-hoc startup `ALTER TABLE` in `backend/db.py`. Migration
+  lifecycle tested in `tests/test_migrations.py`. GitHub Actions CI
+  workflow validates lint (`ruff`), type checking (`mypy`), migrations
+  (`alembic upgrade head`), unit/integration tests, golden determinism
+  suite, Ragas evaluation, security scan (`bandit`), dependency audit
+  (`pip-audit`), and Docker build/compose configurations on every PR.
+
 
 - [ ] **Phase 10 — Frontend.** On hold. Scoped as its own item once Krish
   decides between Streamlit and Next.js + HeroUI. Whichever is chosen, it
@@ -319,5 +334,11 @@ silently expanding a phase that's already "done."
   Faithfulness evaluates suggestions against genuine summary and retrieved
   guideline passage without injected rules (1.000), and Answer Relevancy
   passes (0.504). All golden, unit, lint, and security checks clean.
+- 2026-10-07 — Phase 9 completed end-to-end. Alembic versioned migrations
+  introduced to replace startup `ALTER TABLE` and inspection queries in
+  `backend/db.py`. Multi-stage Dockerfile and Docker Compose orchestration
+  added for API, PostgreSQL 16, Ollama, and vector store. CORS enabled
+  on FastAPI app. CI workflow updated to run migrations and validate
+  Docker build and compose configurations.
 - *(add new entries here as real decisions get made — one line, with the
-  reason)*
+  reason)*

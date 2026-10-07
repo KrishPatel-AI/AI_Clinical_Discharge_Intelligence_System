@@ -50,6 +50,8 @@ jobs:
         run: ruff check .
       - name: Type-check
         run: mypy backend
+      - name: Run database migrations
+        run: alembic upgrade head
       - name: Test
         run: pytest --ignore=tests/golden
       - name: Golden and determinism evaluation
@@ -68,3 +70,7 @@ jobs:
           pip-audit --skip-editable
           --ignore-vuln PYSEC-2026-2447
           --ignore-vuln PYSEC-2026-3046
+      - name: Validate Docker Compose configuration
+        run: docker compose config
+      - name: Validate Docker build
+        run: docker build -f docker/Dockerfile -t clinical-discharge-api:ci .

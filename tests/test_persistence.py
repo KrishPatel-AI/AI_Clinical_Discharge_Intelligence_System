@@ -134,18 +134,10 @@ def test_report_creation_persists_langfuse_trace_correlation(
     assert report.langfuse_parent_observation_id == "b" * 16
 
 
-def test_init_db_adds_langfuse_columns_to_existing_report_table(
+def test_init_db_creates_tables_on_clean_database(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    engine = create_engine(f"sqlite:///{tmp_path / 'legacy.sqlite'}")
-    with engine.begin() as connection:
-        connection.exec_driver_sql(
-            "CREATE TABLE reports ("
-            "id INTEGER PRIMARY KEY, user_id INTEGER NOT NULL, "
-            "filename VARCHAR(255) NOT NULL, diagnosis VARCHAR(255) NOT NULL, "
-            "status VARCHAR(32) NOT NULL, message TEXT NOT NULL, "
-            "completeness_score INTEGER, created_at DATETIME NOT NULL)"
-        )
+    engine = create_engine(f"sqlite:///{tmp_path / 'clean.sqlite'}")
     monkeypatch.setattr(database_module, "engine", engine)
 
     database_module.init_db()
@@ -155,6 +147,7 @@ def test_init_db_adds_langfuse_columns_to_existing_report_table(
     assert "langfuse_trace_id" in columns
     assert "langfuse_parent_observation_id" in columns
     engine.dispose()
+
 
 
 def test_live_review_endpoints_support_status_preview_and_history(

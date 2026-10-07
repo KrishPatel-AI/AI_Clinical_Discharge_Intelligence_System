@@ -43,3 +43,9 @@ def is_langfuse_configured() -> bool:
     return bool(
         os.getenv("LANGFUSE_PUBLIC_KEY") and os.getenv("LANGFUSE_SECRET_KEY")
     )
+
+
+def get_allowed_origins() -> list[str]:
+    """Return configured CORS allowed origins."""
+    raw = os.getenv("ALLOWED_ORIGINS", "*")
+    return [origin.strip() for origin in raw.split(",") if origin.strip()]
