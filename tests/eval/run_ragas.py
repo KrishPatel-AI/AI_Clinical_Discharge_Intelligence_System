@@ -37,7 +37,11 @@ class OllamaStructuredEvaluator(InstructorBaseRagasLLM):
     """Adapt the local Ollama chat model to Ragas' structured-output contract."""
 
     def __init__(self, model_name: str) -> None:
-        self.model = ChatOllama(model=model_name, temperature=0.0)
+        self.model = ChatOllama(
+            model=model_name,
+            base_url=get_ollama_base_url(),
+            temperature=0.0,
+        )
 
     def generate(self, prompt: str, response_model: Any) -> Any:
         return self.model.with_structured_output(response_model).invoke(prompt)
@@ -73,17 +77,15 @@ def _build_review_rows(index_dir: Path) -> tuple[list[dict[str, Any]], int]:
             f"{extraction.diagnosis} and identify missing sections for "
             f"doctor review: {source_document}"
         )
+        findings = [
+            f"- {suggestion.section.replace('_', ' ')}: Not documented in discharge summary."
+            for suggestion in review.suggestions
+        ]
         response = (
             f"Review findings for {extraction.diagnosis}:\n"
-            + "\n".join(
-                [
-                    f"- {suggestion.section.replace('_', ' ')}: "
-                    "Not documented in discharge summary; "
-                    f"{suggestion.explanation}"
-                    for suggestion in review.suggestions
-                ]
-            )
+            + "\n".join(findings)
         )
+
         candidate_result = query_index(
             extraction.diagnosis,
             index_dir=index_dir,
