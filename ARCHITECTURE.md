@@ -160,11 +160,9 @@ concrete checklist behind each one.
   without a full resubmission (see AGENTS.md for the endpoint list).
 - **Maintainability:** one approved backend stack, one folder layout,
   guidelines added/changed by folder — not code — changes, this document
-  kept current. Known item before deployment: the report table's schema
-  is currently applied via manual startup `ALTER TABLE` logic in
-  `db.py`, which can race under concurrent app instances. Replacing this
-  with a versioned migration tool (e.g. Alembic) is flagged for Phase 9
-  or 11 (see STATUS.md), not required for Phase 8.
+  kept current. Schema evolutions are handled deterministically via
+  Alembic versioned migrations (`alembic/versions/`), eliminating startup
+  locks or concurrency hazards across multiple container instances.
 - **UI/UX (Phase 10, not yet built):** minimalist, modern, dashboard-style,
   free of the generic "AI tool" look, with both light and dark mode
   required regardless of framework — full detail in AGENTS.md's
@@ -218,7 +216,10 @@ concrete checklist behind each one.
   the manual `ALTER TABLE` schema logic in `db.py` as a concurrency risk
   to resolve via a migration tool in Phase 9, not Phase 8.
 - 2026-10-06 — Confirmed directly that scoring in `backend/rag/workflow.py`
-  is entirely algorithmic (no LLM call) and updated the AI processing
-  layer and Key Decisions to record this verified design. Verified Phase 8
-  evaluation with candidate-ranked Context Precision and clean Faithfulness
-  evaluations in Ragas.
+  is entirely algorithmic and programmatic (no second LLM call). Updated
+  the AI processing layer description and Key Decisions accordingly.
+- 2026-10-07 — Phase 9 completed: replaced ad-hoc startup schema mutations in
+  `backend/db.py` with versioned Alembic migrations. Added containerization
+  specs (`docker/Dockerfile`, `docker/entrypoint.sh`, `docker-compose.yml`)
+  orchestrating API, PostgreSQL 16, Ollama, and vector store volumes. Enabled
+  CORS on FastAPI app with configurable origins.

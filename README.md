@@ -10,20 +10,14 @@ the AI never edits the discharge document itself.
 B.Tech Engineering Project - II, Semester VII, AY 2026-27, Group 5-B.
 
 ## Status
-Phases 0-7 are complete against the verified current requirements. The
-initial Indian-source knowledge base covers asthma, diabetes, and high blood
-pressure: seven preserved PDFs, seven Markdown conversions, and 1,100 unique
-FAISS chunks with source traceability. Phase 4 is revalidated against that
-knowledge base, and Phase 5 uses deterministic algorithmic scoring with
-golden tests. Phase 6 is complete: the typed `/reviews` API supports live
-per-suggestion status updates, non-exporting previews, and server-side
-history search and grouping. Phase 7 is complete: export-time layout-only
-structuring is implemented, with content-presence verification to ensure the
-original discharge content is not dropped during export formatting. The
-frontend decision is finalized as Next.js with HeroUI, but frontend
-implementation is deferred to Phase 10. Phases 8-9 are the next backend
-work items, followed by Phase 10 frontend and Phase 11 deployment.
-See [STATUS.md](./STATUS.md) for the current phase and the full plan.
+Phases 0-9 are complete and verified. The system features genuine document
+parsing (PDF, DOCX, TXT), an India-sourced clinical guideline knowledge base
+(asthma, diabetes, high blood pressure) indexed with FAISS, deterministic
+RAG-grounded comparison and scoring, live-interaction APIs (`/reviews`), layout-only
+export structuring, complete Langfuse metadata observability, Ragas evaluation gates,
+Alembic versioned schema migrations, and full Docker Compose containerization.
+Frontend implementation (Next.js + HeroUI) is scoped for Phase 10.
+See [STATUS.md](./STATUS.md) for the active status and phase details.
 
 ## Documentation map
 - [ARCHITECTURE.md](./ARCHITECTURE.md) - system design: the layers, the
@@ -36,9 +30,46 @@ See [STATUS.md](./STATUS.md) for the current phase and the full plan.
   before that phase starts).
 
 ## How to run
-See STATUS.md for current setup instructions as the backend phases
-progress; this section should be filled in with the real run commands
-once Phase 9 (containerization) is complete.
+
+### 1. Run full stack via Docker Compose
+To launch the complete system (FastAPI API, PostgreSQL 16, Ollama, and vector store) with automated migrations and indexing:
+```bash
+docker compose up
+```
+The API will be available at `http://localhost:8000` (docs at `http://localhost:8000/docs`).
+
+### 2. Local development
+To run locally in a Python 3.11 virtual environment:
+```bash
+# Apply database migrations
+alembic upgrade head
+
+# Ingest / update guideline vector index
+python knowledge_base/ingest.py
+
+# Start FastAPI server
+uvicorn backend.main:app --reload
+```
+
+### 3. Verification & testing
+```bash
+# Run unit & integration test suite
+pytest
+
+# Run golden determinism test suite
+pytest tests/golden -q
+
+# Run Ragas evaluation
+python tests/eval/run_ragas.py
+
+# Lint and type-check
+ruff check .
+mypy backend
+
+# Security scan and dependency audit
+bandit -r backend
+pip-audit --skip-editable --ignore-vuln PYSEC-2026-2447 --ignore-vuln PYSEC-2026-3046
+```
 
 ## Scope
 No real patient data is used or stored. The system does not connect to any
