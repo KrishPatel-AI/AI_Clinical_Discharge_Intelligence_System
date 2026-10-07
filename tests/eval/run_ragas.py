@@ -69,26 +69,19 @@ def _build_review_rows(index_dir: Path) -> tuple[list[dict[str, Any]], int]:
 
         source_document = case["source_document"]
         user_input = (
-            "Review this synthetic discharge summary and identify missing "
-            f"sections for doctor review: {source_document}"
+            "Review this synthetic discharge summary for "
+            f"{extraction.diagnosis} and identify missing sections for "
+            f"doctor review: {source_document}"
         )
-        response = json.dumps(
-            {
-                "status": review.status,
-                "completeness_score": review.completeness_score,
-                "comparison_statuses": [
-                    {"section": item.section, "status": item.status}
-                    for item in review.comparisons
-                ],
-                "suggestions": [
-                    {
-                        "section": suggestion.section,
-                        "explanation": suggestion.explanation,
-                    }
+        response = (
+            f"Review findings for {extraction.diagnosis}:\n"
+            + "\n".join(
+                [
+                    f"- Suggestion for {suggestion.section.replace('_', ' ')}: "
+                    f"{suggestion.explanation}"
                     for suggestion in review.suggestions
-                ],
-            },
-            sort_keys=True,
+                ]
+            )
         )
         candidate_result = query_index(
             extraction.diagnosis,
