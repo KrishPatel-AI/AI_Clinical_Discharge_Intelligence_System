@@ -1,0 +1,28 @@
+DISTRICT GENERAL HOSPITAL, INDORE
+=================================
+INPATIENT DISCHARGE SLIP
+------------------------
+Patient Name        : Vikram Solanki (Synthetic)
+UHID / IP No        : DGH-IND-1029
+Age / Gender        : 51 Years / Male
+Consultant          : Dr. P. C. Gupta, MBBS, MD
+Date of Admission   : 04-Oct-2026
+Date of Discharge   : 06-Oct-2026
+============================================================
+
+DIAGNOSIS
+---------
+ Bronchial Asthma
+
+HOSPITAL COURSE
+---------------
+ Patient admitted with breathlessness and cough. Nebulized salbutamol given QID for 2 days. SpO2 97% on room air at discharge. Vitals stable.
+
+MEDICATIONS
+-----------
+ - Budesonide inhaler 200mcg twice daily
+ - Tab Paracetamol 650mg SOS for body ache
+
+ADVICE
+------
+ Avoid exposure to cold wind, dust, and allergens.

@@ -45,7 +45,7 @@ instead of guessing.
 
 | Layer | Technology | Responsibility |
 |---|---|---|
-| Presentation | Undecided — see Frontend framework note below | Upload, inline review, live preview, history |
+| Presentation | Next.js + HeroUI | Upload, inline review, live preview, history |
 | API | FastAPI | Receives uploads, exposes granular per-suggestion and preview endpoints, triggers the pipeline |
 | AI processing | LangChain + LangGraph + LLM provider abstraction | Extracts structured fields via LLM, retrieves via FAISS, compares sections, and scores completeness algorithmically |
 | Formatting | Independent module, export-time | Layout-only structuring of the final document |
@@ -83,21 +83,17 @@ unrestricted redistribution is allowed.
   set and the golden/determinism test set, and compare against the
   Ollama baseline.
 
-## Frontend framework — finalized: Next.js + HeroUI
-Confirmed directly by Krish on 2026-09-24. Streamlit was the original
-choice for speed of iteration; Next.js + HeroUI (a free, open-source,
-accessible React component library built on Tailwind CSS, with built-in
-light/dark theming) replaces it, primarily for finer-grained control over
-layout, inline diff interactions, and live preview than Streamlit's real
-ceiling allowed.
+## Frontend framework — implemented: Next.js + HeroUI
+Built and verified in Phase 10. Next.js 15 (App Router, React 19, TypeScript)
+with HeroUI (accessible React component library built on Tailwind CSS, with
+native light/dark theming) provides fine-grained control over layout,
+inline review interactions, synchronized split-view document comparison,
+and live export preview.
 
-This decision did not affect Phases 1-9: FastAPI already exposes a
-decoupled JSON API (see the API design section in AGENTS.md), so the
-frontend is swappable without touching backend logic, as long as CORS is
-enabled and the granular per-suggestion/preview endpoints exist — both
-already required elsewhere in this document. Phase 10 (see STATUS.md) is
-where this actually gets built; the framework being decided now does not
-move that phase earlier.
+The frontend operates decoupled from backend business logic, consuming the
+granular FastAPI JSON REST API (`POST /reviews`, `GET /reviews/{id}`,
+`PATCH /reviews/{id}/suggestions/{suggestion_id}`, `GET /reviews/{id}/preview`,
+`POST /reviews/{id}/export`, and `GET /reviews`).
 
 ## Key decisions and why
 - **Langfuse traces metadata only, never raw clinical text.** Every

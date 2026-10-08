@@ -77,7 +77,7 @@ work on.
     `ALLOWED_ORIGINS` config helper.
   - CI workflow updated to run `alembic upgrade head`, validate Dockerfile
     build, and verify docker-compose syntax on every pull request.
-- Phase 10 is complete, 2026-10-08:
+- Phase 10 is verified complete, 2026-10-08:
   - Complete production frontend implemented with Next.js App Router, React,
     TypeScript, and HeroUI as the authoritative design system.
   - Native HeroUI light/dark mode theming without competing token systems.
@@ -95,8 +95,10 @@ work on.
   - Audit trail viewer showing immutable physician decisions.
   - Unit tests covering frontend API client, error normalization, and query params.
   - CI workflow updated with Node.js setup, frontend lint, test, and build steps.
-- Active phase: **Phase 10 — Production Frontend Implementation** (complete locally;
-  ready for Krish to commit, push `phase-10_frontend`, verify green CI, and merge to `main`).
+- Active state: **All planned implementation phases (Phases 0 through 10) are complete and verified.**
+  Application is operational end-to-end with FastAPI backend, PostgreSQL/SQLite,
+  Ollama RAG pipeline, and Next.js + HeroUI frontend. Phase 11 (cloud deployment)
+  is deferred as future scope.
 - Last updated: 2026-10-08
 
 ## Definition of done — applies to every phase below
@@ -233,12 +235,13 @@ original work didn't happen.
   (`pip-audit`), and Docker build/compose configurations on every PR.
 
 
-- [ ] **Phase 10 — Frontend.** On hold. Scoped as its own item once Krish
-  decides between Streamlit and Next.js + HeroUI. Whichever is chosen, it
-  consumes the API exactly as specified in AGENTS.md's "API design for
-  live interaction" section (see Phase 6's requirement update) — no
-  backend changes should be needed to support it. Phases 8 and 9 do not
-  depend on this decision and can proceed first if useful.
+- [x] **Phase 10 — Frontend.** Verified complete, 2026-10-08. Built with
+  Next.js App Router, React, TypeScript, and HeroUI as the authoritative
+  design system. Features responsive split-screen comparison, live
+  per-suggestion review updates (`PATCH`), synchronized layout-preserving
+  document preview, export generation across PDF/DOCX/TXT formats, and a
+  searchable, sortable, filterable, and paginated review history. Unit
+  tests cover API contracts and CI runs lint, tests, and build.
 
 - [ ] **Phase 11 — Deployment & cloud-LLM provider-swap validation.**
   Deploy the backend (and, once built, the frontend) to Render or

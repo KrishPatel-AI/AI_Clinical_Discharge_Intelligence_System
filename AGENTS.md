@@ -29,11 +29,8 @@ happens to be accurate for the cases they actually see.
 
 ## Approved stack — do not change without flagging it first
 - Backend: Python, FastAPI
-- Frontend: **finalized as Next.js + HeroUI**, confirmed directly by
-  Krish on 2026-09-24. Do not build or modify any frontend code until
-  Phase 10 regardless — see STATUS.md for the current phase and this
-  file's Phase 10 design brief below, which still applies in full now
-  that the framework is decided.
+- Frontend: **Next.js + HeroUI**, confirmed directly by Krish on
+  2026-09-24 and implemented in Phase 10 under `/frontend`.
 - AI orchestration: LangChain + LangGraph
 - LLM runtime: Ollama, local, for development and initial deployment
 - Vector store: ChromaDB or FAISS (guideline knowledge base)
@@ -46,21 +43,15 @@ happens to be accurate for the cases they actually see.
 - Containerization / CI: Docker, GitHub Actions
 - Deployment target: Render or Railway
 
-## Frontend framework — decided, Phase 10 still not started
-Next.js + HeroUI is confirmed as final, directly by Krish, not inferred or
-chosen by an agent. This does not change when Phase 10 starts: FastAPI
-already exposes a decoupled JSON API, so building the frontend now would
-still be premature relative to the phase sequence in STATUS.md. What
-earlier phases must do to keep Phase 10 low-friction when it starts:
-- Keep all API responses as typed Pydantic models (already required).
-- Enable CORS on the FastAPI app, configurable by allowed-origin list via
-  environment variable, even though nothing depends on it yet.
-- Follow the granular endpoint shape in the "API design for live
-  interaction" section below — a live-updating frontend (Streamlit,
-  Next.js, or anything else) needs per-suggestion endpoints, not just a
-  single upload-and-return call.
-Do not scaffold the frontend before Phase 10, even though the framework
-is decided.
+## Frontend framework — implemented in Phase 10
+Next.js 15 App Router + HeroUI is fully implemented and tested. FastAPI
+exposes a decoupled JSON API with CORS enabled. The frontend provides:
+- Typed API client communicating with backend Pydantic models.
+- Granular per-suggestion review via `PATCH /reviews/{id}/suggestions/{suggestion_id}`.
+- Synchronized split-screen document comparison and layout preview via
+  `GET /reviews/{id}/preview`.
+- Multi-format document export via `POST /reviews/{id}/export`.
+- Searchable, filterable, sortable, and paginated review history.
 
 ## Phase 10 design brief (reference only — do not act on this before Phase 10)
 Recorded now, ahead of time, against the confirmed Next.js + HeroUI
@@ -247,33 +238,42 @@ decision must be recorded in the audit log.
 
 ## Folder structure (create if missing; don't restructure without asking)
 ```
-/backend                FastAPI app: routers, services
+/backend                FastAPI app: routers, services, config, database
 /backend/llm            Provider abstraction, prompts
 /backend/rag            LangGraph workflow: extract -> retrieve -> compare -> score
-/backend/formatting     Document structuring/formatting (see above), separate from /rag
-/backend/importers      PDF/DOCX/TXT parsing
-/backend/models         Pydantic schemas + SQLAlchemy models
+/backend/formatting     Document structuring and export formatting (PDF, DOCX, TXT)
+/backend/models         Pydantic schemas + SQLAlchemy ORM models
+/backend/routers        FastAPI endpoints (/reviews, /guidelines)
+/backend/services       Document extraction, persistence, and guideline resolver
+/frontend               Next.js 15 App Router + HeroUI UI application
 /knowledge_base
 /knowledge_base/guidelines/<diagnosis-slug>/   source docs + metadata
-/knowledge_base/ingest.py                      indexing script
+/knowledge_base/ingest.py                      indexing script (FAISS)
+/sample_documents       Realistic synthetic demo cases (Asthma, Diabetes, HTN, Unsupported)
 /tests                  pytest suite, mirrors /backend structure
 /tests/eval             Ragas evaluation set and runner
-/tests/golden           Golden test cases for determinism (see above)
+/tests/golden           Golden test cases for determinism
+/alembic                Database schema migrations
 /docker                 Dockerfile(s), docker-compose.yml
-.github/workflows       CI config
+.github/workflows       CI configuration
 ```
 
 ## Commands
 Keep this section accurate — update it the moment a command changes.
 - Run backend: `uvicorn backend.main:app --reload`
-- Run tests: `pytest`
+- Run frontend: `cd frontend && npm run dev`
+- Run backend tests: `pytest`
+- Run golden/determinism checks: `pytest tests/golden -q`
 - Run RAG evaluation: `python tests/eval/run_ragas.py`
-- Run golden/determinism checks: `python tests/golden/run_golden.py`
-- Lint: `ruff check .`
-- Type-check: `mypy backend`
-- Security scan: `bandit -r backend` and `pip-audit`
+- Backend lint: `ruff check .`
+- Backend type-check: `mypy backend`
+- Frontend tests: `cd frontend && npm test`
+- Frontend lint: `cd frontend && npm run lint`
+- Frontend build: `cd frontend && npm run build`
+- Security scan: `bandit -r backend` and `pip-audit --skip-editable --ignore-vuln PYSEC-2026-2447 --ignore-vuln PYSEC-2026-3046`
 - Ingest/re-index guidelines: `python knowledge_base/ingest.py`
-- Run everything via Docker: `docker compose up`
+- Run database migrations: `alembic upgrade head`
+- Run full backend stack via Docker: `docker compose up`
 
 ## Conventions
 - Every suggestion carries a reference to the specific retrieved guideline

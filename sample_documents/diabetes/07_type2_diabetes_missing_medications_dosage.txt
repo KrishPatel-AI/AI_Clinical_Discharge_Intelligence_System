@@ -1,0 +1,31 @@
+RURAL COMMUNITY HEALTH CENTRE, DHARWAD
+======================================
+DISCHARGE NOTE
+--------------
+Patient Name        : Basavaraj Patil (Synthetic)
+UHID / IP No        : CHC-DHW-7712
+Age / Gender        : 49 Years / Male
+Consultant          : Dr. G. S. Hiremath, MBBS
+Date of Admission   : 02-Oct-2026
+Date of Discharge   : 05-Oct-2026
+============================================================
+
+DIAGNOSIS
+---------
+ Type 2 Diabetes Mellitus
+
+CLINICAL SUMMARY
+----------------
+ Known diabetic for 3 years, admitted for uncontrolled sugars. Random blood sugar on admission 310 mg/dL. Managed with insulin during hospital stay. Blood sugar normalized to 142 mg/dL. Discharged in stable condition.
+
+MEDICATIONS
+-----------
+ Continue home diabetes medications as advised earlier. Resume regular oral antidiabetic pills.
+
+FOLLOW-UP
+---------
+ Review in General OPD after 2 weeks with repeat fasting blood sugar test.
+
+WARNING SIGNS
+-------------
+ Watch out for dizziness, excessive sweating, or weakness and report if observed.
