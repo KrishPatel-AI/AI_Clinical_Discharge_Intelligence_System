@@ -121,7 +121,7 @@ export function SuggestionCard({
           {getStatusChip()}
         </div>
 
-        <p className="text-sm font-medium text-foreground-900 dark:text-foreground-100 leading-relaxed">
+        <p className="text-sm font-medium text-foreground-900 dark:text-foreground-400 leading-relaxed">
           {suggestion.explanation}
         </p>
 
@@ -141,7 +141,7 @@ export function SuggestionCard({
             <span className="font-semibold text-primary uppercase text-[10px] block mb-0.5">
               Suggested Addition / Clinical Wording
             </span>
-            <span className="text-foreground-800 dark:text-foreground-200 font-medium leading-relaxed">
+            <span className="text-foreground-800 dark:text-foreground-400 font-medium leading-relaxed">
               {suggestion.suggested_text}
             </span>
           </div>
