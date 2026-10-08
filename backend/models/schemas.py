@@ -63,6 +63,7 @@ class ReviewResponse(BaseModel):
     completeness_score: int | None = Field(default=None, ge=0, le=100)
     suggestions: list[Suggestion] = Field(default_factory=list)
     report_id: int | None = None
+    source_text: str = ""
 
 
 class DecisionRequest(BaseModel):
@@ -107,6 +108,7 @@ class PersistedReportResponse(BaseModel):
     diagnosis: str
     status: str
     message: str
+    source_text: str = ""
     completeness_score: int | None = Field(default=None, ge=0, le=100)
     created_at: str
     suggestions: list[PersistedSuggestion] = Field(default_factory=list)

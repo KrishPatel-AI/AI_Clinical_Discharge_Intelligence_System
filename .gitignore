@@ -47,3 +47,5 @@ Thumbs.db
 build/
 dist/
 *.egg-info/
+frontend/.next/
+frontend/out/

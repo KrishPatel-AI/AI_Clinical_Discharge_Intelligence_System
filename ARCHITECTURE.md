@@ -163,10 +163,13 @@ concrete checklist behind each one.
   kept current. Schema evolutions are handled deterministically via
   Alembic versioned migrations (`alembic/versions/`), eliminating startup
   locks or concurrency hazards across multiple container instances.
-- **UI/UX (Phase 10, not yet built):** minimalist, modern, dashboard-style,
-  free of the generic "AI tool" look, with both light and dark mode
-  required regardless of framework — full detail in AGENTS.md's
-  "Phase 10 design brief," kept there rather than duplicated here.
+- **UI/UX (Phase 10):** Production frontend implemented in Next.js App
+  Router with React, TypeScript, and HeroUI as the authoritative UI/design
+  system source of truth. Built with native light and dark modes, live
+  per-suggestion review interaction via `PATCH`, live structured document
+  comparison, preview-before-download (`GET /reviews/{id}/preview`),
+  export generation (`POST /reviews/{id}/export`), and comprehensive
+  history search, filtering, sorting, grouping, and pagination.
 
 ## Out of scope for the current build (see STATUS.md for future-phase items)
 - EHR integration / automatic patient record loading
@@ -222,4 +225,10 @@ concrete checklist behind each one.
   `backend/db.py` with versioned Alembic migrations. Added containerization
   specs (`docker/Dockerfile`, `docker/entrypoint.sh`, `docker-compose.yml`)
   orchestrating API, PostgreSQL 16, Ollama, and vector store volumes. Enabled
-  CORS on FastAPI app with configurable origins.
+  CORS on FastAPI app with configurable origins.
+- 2026-10-08 — Phase 10 completed: built production Next.js + HeroUI frontend
+  with responsive App Router architecture, upload workflow with validation,
+  live suggestion decision review, live document synchronization, export
+  format preview and download, full history search/filter/sort/pagination,
+  and native HeroUI light/dark theming. Synchronized preview endpoint with
+  authoritative reviewed document structuring.

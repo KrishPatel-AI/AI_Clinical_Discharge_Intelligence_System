@@ -108,7 +108,11 @@ async def _create_review(
             }
         )
         return review.model_copy(
-            update={"report_id": report.id, "suggestions": suggestions}
+            update={
+                "report_id": report.id,
+                "suggestions": suggestions,
+                "source_text": source_text,
+            }
         )
 
 
@@ -198,10 +202,11 @@ def preview_review(
     report = find_report(db, report_id)
     if report is None:
         raise HTTPException(status_code=404, detail="Review not found.")
+    content = _structured_report_content(report)
     return PreviewResponse(
         report_id=report.id,
         format=format,
-        content=report.source_text,
+        content=content,
         exported=False,
     )
 

@@ -236,6 +236,7 @@ def to_persisted_response(report: Report) -> PersistedReportResponse:
         diagnosis=report.diagnosis,
         status=report.status,
         message=report.message,
+        source_text=report.source_text or "",
         completeness_score=report.completeness_score,
         created_at=report.created_at.isoformat(),
         suggestions=suggestions,

@@ -77,7 +77,7 @@ def test_verify_content_presence_detects_missing_sentence() -> None:
     assert verify_content_presence(original, structured) is False
 
 
-def test_preview_returns_source_text_without_recording_export(
+def test_preview_returns_structured_content_without_recording_export(
     monkeypatch, index_dir, database: Session
 ) -> None:
     class FakeProvider:
@@ -115,9 +115,11 @@ def test_preview_returns_source_text_without_recording_export(
         assert preview.status_code == 200
         body = preview.json()
         assert body["exported"] is False
-        assert body["content"] == "Patient is 42 years old. Diagnosis is asthma."
-        assert "Patient Information" not in body["content"]
-        assert "Added on review" not in body["content"]
+        assert "Patient is 42 years old." in body["content"]
+        assert "Diagnosis is asthma." in body["content"]
+        assert "Patient Information" in body["content"]
+        if created.json()["suggestions"]:
+            assert "Added on review" in body["content"]
         stored = database.get(Report, report_id)
         assert stored is not None
         assert not any(log.decision == "exported" for log in stored.audit_logs)
