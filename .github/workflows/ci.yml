@@ -70,6 +70,24 @@ jobs:
           pip-audit --skip-editable
           --ignore-vuln PYSEC-2026-2447
           --ignore-vuln PYSEC-2026-3046
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install frontend dependencies
+        run: npm ci
+        working-directory: frontend
+      - name: Frontend Lint
+        run: npm run lint
+        working-directory: frontend
+      - name: Frontend Test
+        run: npm test
+        working-directory: frontend
+      - name: Frontend Build
+        run: npm run build
+        working-directory: frontend
       - name: Validate Docker Compose configuration
         run: docker compose config
       - name: Validate Docker build

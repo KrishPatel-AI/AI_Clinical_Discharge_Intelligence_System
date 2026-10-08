@@ -197,7 +197,8 @@ def test_live_review_endpoints_support_status_preview_and_history(
             )
             assert preview.status_code == 200
             assert preview.json()["format"] == output_format
-            assert preview.json()["content"] == "Live asthma review"
+            assert "Live asthma review" in preview.json()["content"]
+            assert "Added on review" in preview.json()["content"]
             assert preview.json()["exported"] is False
 
         history = client.get(

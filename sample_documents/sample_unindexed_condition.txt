@@ -1,0 +1,19 @@
+Patient Information:
+Anand Verma, 29 Years, Male.
+Admitted: 04-Oct-2026, Discharged: 07-Oct-2026.
+
+Diagnosis:
+Acute appendicitis status post laparoscopic appendectomy.
+
+Hospital Course:
+Presented with acute right lower quadrant pain and tenderness. Ultrasound confirmed acute appendicitis. Underwent uneventful laparoscopic appendectomy under general anesthesia. Post-operative recovery smooth. Tolerating soft diet well. Surgical incisions healing cleanly with no discharge.
+
+Medications:
+- Tablet Cefuroxime 500 mg: Twice daily for 5 days
+- Tablet Paracetamol 650 mg: As needed for incision pain
+
+Advice:
+Keep surgical dressing dry. Avoid heavy lifting for 2 weeks.
+
+Follow-up:
+Surgical OPD in 7 days for suture inspection and wound check.

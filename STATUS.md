@@ -77,11 +77,27 @@ work on.
     `ALLOWED_ORIGINS` config helper.
   - CI workflow updated to run `alembic upgrade head`, validate Dockerfile
     build, and verify docker-compose syntax on every pull request.
-- Active phase: **Phase 9 — Containerization, CI & security gates** (complete locally;
-  ready for Krish to commit, push `phase-9_Containerization_CI_Security_Gates`, verify
-  green CI on GitHub Actions, and merge to `main`). Phase 10 (Next.js + HeroUI frontend)
-  is the next phase.
-- Last updated: 2026-10-07
+- Phase 10 is complete, 2026-10-08:
+  - Complete production frontend implemented with Next.js App Router, React,
+    TypeScript, and HeroUI as the authoritative design system.
+  - Native HeroUI light/dark mode theming without competing token systems.
+  - New review upload flow with PDF, DOCX, and TXT client/server validation,
+    loading states, and error handling.
+  - Review workspace with completeness score, diagnosis display, and
+    guideline recommendation cards.
+  - Granular per-suggestion review with live PATCH updates and atomic state.
+  - Live document comparison showing original discharge summary alongside
+    the structured reviewed document (split-view on desktop, tabs on mobile).
+  - Synchronized backend preview (`GET /reviews/{id}/preview`) with structured
+    content and accepted suggestions, ensuring preview fidelity before export.
+  - Export flow supporting PDF, DOCX, and TXT with live preview before commit.
+  - Searchable, filterable, sortable, groupable, and paginated review history.
+  - Audit trail viewer showing immutable physician decisions.
+  - Unit tests covering frontend API client, error normalization, and query params.
+  - CI workflow updated with Node.js setup, frontend lint, test, and build steps.
+- Active phase: **Phase 10 — Production Frontend Implementation** (complete locally;
+  ready for Krish to commit, push `phase-10_frontend`, verify green CI, and merge to `main`).
+- Last updated: 2026-10-08
 
 ## Definition of done — applies to every phase below
 - Tests exist for its success path and at least one realistic failure
@@ -340,5 +356,10 @@ silently expanding a phase that's already "done."
   added for API, PostgreSQL 16, Ollama, and vector store. CORS enabled
   on FastAPI app. CI workflow updated to run migrations and validate
   Docker build and compose configurations.
+- 2026-10-08 — Phase 10 completed end-to-end. Production Next.js App Router
+  frontend implemented with HeroUI component and theme system. Harmonized
+  `preview_review` endpoint to return structured document representation with
+  accepted suggestions. Added client-side tests, CI workflow updates, and
+  full interaction flows for upload, review, preview, export, and history.
 - *(add new entries here as real decisions get made — one line, with the
   reason)*
