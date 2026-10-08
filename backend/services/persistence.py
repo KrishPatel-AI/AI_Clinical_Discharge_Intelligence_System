@@ -251,6 +251,10 @@ def list_reports(
 
 def to_persisted_response(report: Report) -> PersistedReportResponse:
     """Convert an ORM report to the stable API response contract."""
+    from backend.services.guidelines import resolve_guideline_info
+
+    base_guideline_info = resolve_guideline_info(report.diagnosis)
+
     audit_logs = [
         AuditLogResponse(
             id=log.id,
@@ -260,39 +264,49 @@ def to_persisted_response(report: Report) -> PersistedReportResponse:
         )
         for log in report.audit_logs
     ]
-    suggestions = [
-        PersistedSuggestion(
-            id=suggestion.id,
-            section=suggestion.section,
-            explanation=suggestion.explanation,
-            guideline_passage=suggestion.guideline_passage,
-            source_url=suggestion.source_url,
-            action=cast(
-                Literal["add", "modify", "remove"],
-                getattr(suggestion, "action", "add") or "add",
-            ),
-            target_text=getattr(suggestion, "target_text", "") or "",
-            suggested_text=getattr(suggestion, "suggested_text", "") or "",
-            status=(
-                "accepted"
-                if suggestion.decision == "accepted"
-                else "rejected"
-                if suggestion.decision == "ignored"
-                else "pending"
-            ),
-            decision=(
-                cast(SuggestionDecision, suggestion.decision)
-                if suggestion.decision is not None
-                else None
-            ),
-            decided_at=(
-                suggestion.decided_at.isoformat()
-                if suggestion.decided_at is not None
-                else None
-            ),
+    suggestions = []
+    for suggestion in report.suggestions:
+        doc_info = (
+            resolve_guideline_info(report.diagnosis, source_url=suggestion.source_url)
+            if not base_guideline_info.get("guideline_document_url")
+            else base_guideline_info
         )
-        for suggestion in report.suggestions
-    ]
+        suggestions.append(
+            PersistedSuggestion(
+                id=suggestion.id,
+                section=suggestion.section,
+                explanation=suggestion.explanation,
+                guideline_passage=suggestion.guideline_passage,
+                source_url=suggestion.source_url,
+                action=cast(
+                    Literal["add", "modify", "remove"],
+                    getattr(suggestion, "action", "add") or "add",
+                ),
+                target_text=getattr(suggestion, "target_text", "") or "",
+                suggested_text=getattr(suggestion, "suggested_text", "") or "",
+                status=(
+                    "accepted"
+                    if suggestion.decision == "accepted"
+                    else "rejected"
+                    if suggestion.decision == "ignored"
+                    else "pending"
+                ),
+                decision=(
+                    cast(SuggestionDecision, suggestion.decision)
+                    if suggestion.decision is not None
+                    else None
+                ),
+                decided_at=(
+                    suggestion.decided_at.isoformat()
+                    if suggestion.decided_at is not None
+                    else None
+                ),
+                document_title=doc_info.get("document_title"),
+                document_filename=doc_info.get("document_filename"),
+                source_name=doc_info.get("source_name"),
+                guideline_document_url=doc_info.get("guideline_document_url"),
+            )
+        )
     return PersistedReportResponse(
         id=report.id,
         filename=report.filename,

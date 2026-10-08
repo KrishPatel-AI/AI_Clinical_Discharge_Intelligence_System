@@ -64,9 +64,7 @@ def structure_document(
             explanation = getattr(s, "explanation", "") or (
                 s.explanation if hasattr(s, "explanation") else str(s)
             )
-            if suggested and explanation and suggested != explanation:
-                items.append(f"{suggested} - {explanation}")
-            elif suggested:
+            if suggested:
                 items.append(suggested)
             elif explanation:
                 items.append(explanation)

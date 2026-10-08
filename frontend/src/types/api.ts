@@ -27,6 +27,10 @@ export interface GuidelineMatch {
   source_url: string;
   passage: string;
   similarity: number;
+  document_title?: string | null;
+  document_filename?: string | null;
+  source_name?: string | null;
+  guideline_document_url?: string | null;
 }
 
 export interface ComparisonItem {
@@ -48,6 +52,10 @@ export interface Suggestion {
   suggested_text?: string;
   suggestion_id?: number | null;
   decision?: SuggestionDecision | null;
+  document_title?: string | null;
+  document_filename?: string | null;
+  source_name?: string | null;
+  guideline_document_url?: string | null;
 }
 
 export interface ReviewResponse {
@@ -85,6 +93,10 @@ export interface PersistedSuggestion {
   status: SuggestionStatus;
   decision?: SuggestionDecision | null;
   decided_at?: string | null;
+  document_title?: string | null;
+  document_filename?: string | null;
+  source_name?: string | null;
+  guideline_document_url?: string | null;
 }
 
 export interface PersistedReportResponse {

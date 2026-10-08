@@ -30,6 +30,10 @@ class GuidelineMatch(BaseModel):
     source_url: str
     passage: str
     similarity: float = Field(ge=0.0, le=1.0)
+    document_title: str | None = None
+    document_filename: str | None = None
+    source_name: str | None = None
+    guideline_document_url: str | None = None
 
 
 class ComparisonItem(BaseModel):
@@ -53,6 +57,10 @@ class Suggestion(BaseModel):
     suggested_text: str = ""
     suggestion_id: int | None = None
     decision: Literal["accepted", "ignored"] | None = None
+    document_title: str | None = None
+    document_filename: str | None = None
+    source_name: str | None = None
+    guideline_document_url: str | None = None
 
 
 class ReviewResponse(BaseModel):
@@ -104,6 +112,10 @@ class PersistedSuggestion(BaseModel):
     status: Literal["pending", "accepted", "rejected"] = "pending"
     decision: Literal["accepted", "ignored"] | None = None
     decided_at: str | None = None
+    document_title: str | None = None
+    document_filename: str | None = None
+    source_name: str | None = None
+    guideline_document_url: str | None = None
 
 
 class PersistedReportResponse(BaseModel):

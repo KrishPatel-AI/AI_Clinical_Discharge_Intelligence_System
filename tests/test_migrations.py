@@ -49,10 +49,16 @@ def test_alembic_migration_upgrade_and_downgrade(alembic_config: tuple[Config, s
     assert "status" in report_columns
     assert "message" in report_columns
     assert "completeness_score" in report_columns
+    assert "initial_score" in report_columns
     assert "source_text" in report_columns
     assert "langfuse_trace_id" in report_columns
     assert "langfuse_parent_observation_id" in report_columns
     assert "created_at" in report_columns
+
+    suggestion_columns = {col["name"] for col in inspector.get_columns("suggestions")}
+    assert "action" in suggestion_columns
+    assert "target_text" in suggestion_columns
+    assert "suggested_text" in suggestion_columns
 
     # 2. Downgrade to base
     command.downgrade(config, "base")

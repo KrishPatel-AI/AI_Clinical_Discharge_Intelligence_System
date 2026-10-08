@@ -11,6 +11,7 @@ from backend.config import get_allowed_origins
 from backend.db import init_db
 from backend.routers.discharge import reviews_router
 from backend.routers.discharge import router as discharge_router
+from backend.routers.guidelines import router as guidelines_router
 
 
 class HealthResponse(BaseModel):
@@ -38,6 +39,7 @@ app.add_middleware(
 
 app.include_router(discharge_router)
 app.include_router(reviews_router)
+app.include_router(guidelines_router)
 
 
 @app.get("/health", response_model=HealthResponse)

@@ -74,13 +74,22 @@ def _retrieve_impl(state: ReviewState) -> dict[str, GuidelineMatch | None]:
     if float(result["distances"][selected_position]) < MIN_RETRIEVAL_SIMILARITY:
         return {"match": None}
     metadata = result["metadatas"][selected_position]
+    diag_slug = str(metadata.get("diagnosis_slug", ""))
+    source_url = str(metadata.get("source_url", ""))
+    from backend.services.guidelines import resolve_guideline_info
+
+    guideline_info = resolve_guideline_info(diag_slug, source_url)
     return {
         "match": GuidelineMatch(
             diagnosis=str(metadata["diagnosis"]),
-            diagnosis_slug=str(metadata["diagnosis_slug"]),
-            source_url=str(metadata["source_url"]),
+            diagnosis_slug=guideline_info.get("diagnosis_slug") or diag_slug,
+            source_url=source_url,
             passage=str(result["documents"][selected_position]),
             similarity=float(result["distances"][selected_position]),
+            document_title=guideline_info.get("document_title"),
+            document_filename=guideline_info.get("document_filename"),
+            source_name=guideline_info.get("source_name"),
+            guideline_document_url=guideline_info.get("guideline_document_url"),
         )
     }
 
@@ -206,6 +215,10 @@ def _score_impl(state: ReviewState) -> dict[str, ReviewResponse]:
                 explanation=rec.get("explanation", ""),
                 guideline_passage=item.guideline_passage,
                 source_url=match.source_url,
+                document_title=match.document_title,
+                document_filename=match.document_filename,
+                source_name=match.source_name,
+                guideline_document_url=match.guideline_document_url,
             )
         )
 
