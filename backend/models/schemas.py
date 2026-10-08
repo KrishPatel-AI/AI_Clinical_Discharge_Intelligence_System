@@ -48,6 +48,9 @@ class Suggestion(BaseModel):
     explanation: str
     guideline_passage: str
     source_url: str
+    action: Literal["add", "modify", "remove"] = "add"
+    target_text: str = ""
+    suggested_text: str = ""
     suggestion_id: int | None = None
     decision: Literal["accepted", "ignored"] | None = None
 
@@ -95,6 +98,9 @@ class PersistedSuggestion(BaseModel):
     explanation: str
     guideline_passage: str
     source_url: str
+    action: Literal["add", "modify", "remove"] = "add"
+    target_text: str = ""
+    suggested_text: str = ""
     status: Literal["pending", "accepted", "rejected"] = "pending"
     decision: Literal["accepted", "ignored"] | None = None
     decided_at: str | None = None

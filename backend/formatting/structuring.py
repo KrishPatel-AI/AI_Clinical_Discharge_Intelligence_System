@@ -58,10 +58,21 @@ def structure_document(
 
     accepted = list(accepted_suggestions)
     if accepted:
-        sections["Added on review"] = [
-            suggestion.explanation if hasattr(suggestion, "explanation") else str(suggestion)
-            for suggestion in accepted
-        ]
+        items = []
+        for s in accepted:
+            suggested = getattr(s, "suggested_text", "")
+            explanation = getattr(s, "explanation", "") or (
+                s.explanation if hasattr(s, "explanation") else str(s)
+            )
+            if suggested and explanation and suggested != explanation:
+                items.append(f"{suggested} - {explanation}")
+            elif suggested:
+                items.append(suggested)
+            elif explanation:
+                items.append(explanation)
+            else:
+                items.append(str(s))
+        sections["Added on review"] = items
 
     render: list[str] = []
     for section_name in SECTION_ORDER:

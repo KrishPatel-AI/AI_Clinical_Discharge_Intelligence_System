@@ -30,6 +30,48 @@ def _get_or_create_user(db: Session) -> User:
     return user
 
 
+def _recalculate_report_metrics(report: Report) -> None:
+    """Recalculate report completeness score and status based on current decisions."""
+    if report.status == "no_match":
+        return
+
+    suggestions = report.suggestions
+    if not suggestions:
+        report.status = "complete"
+        return
+
+    pending_count = sum(1 for s in suggestions if s.decision is None)
+    accepted_count = sum(1 for s in suggestions if s.decision == "accepted")
+
+    if pending_count > 0:
+        report.status = "needs_review"
+    else:
+        report.status = "complete"
+
+    initial_score = getattr(report, "initial_score", None)
+    if initial_score is None:
+        initial_score = (
+            report.completeness_score if report.completeness_score is not None else 0
+        )
+
+    total_suggestions = len(suggestions)
+    if initial_score <= 0:
+        base_matched = 0
+        total_criteria = total_suggestions
+    elif initial_score >= 100:
+        base_matched = total_suggestions
+        total_criteria = total_suggestions
+    else:
+        base_matched = max(
+            1, round(total_suggestions * initial_score / (100 - initial_score))
+        )
+        total_criteria = base_matched + total_suggestions
+
+    current_matched = base_matched + accepted_count
+    new_score = min(100, round(100 * current_matched / max(total_criteria, 1)))
+    report.completeness_score = new_score
+
+
 def create_report(
     db: Session,
     filename: str,
@@ -40,22 +82,30 @@ def create_report(
     langfuse_parent_observation_id: str | None = None,
 ) -> Report:
     """Persist a generated review and all of its grounded suggestions."""
+    status = review.status
+    if review.status == "matched":
+        status = "needs_review" if review.suggestions else "complete"
+
     report = Report(
         user=_get_or_create_user(db),
         filename=filename,
         diagnosis=review.diagnosis,
-        status=review.status,
+        status=status,
         message=review.message,
         source_text=source_text,
         langfuse_trace_id=langfuse_trace_id,
         langfuse_parent_observation_id=langfuse_parent_observation_id,
         completeness_score=review.completeness_score,
+        initial_score=review.completeness_score,
         suggestions=[
             SuggestionRecord(
                 section=suggestion.section,
                 explanation=suggestion.explanation,
                 guideline_passage=suggestion.guideline_passage,
                 source_url=suggestion.source_url,
+                action=suggestion.action,
+                target_text=suggestion.target_text,
+                suggested_text=suggestion.suggested_text,
             )
             for suggestion in review.suggestions
         ],
@@ -94,6 +144,7 @@ def record_decision(
             decided_at=decided_at,
         )
     )
+    _recalculate_report_metrics(report)
     db.commit()
     db.refresh(report)
     return report
@@ -140,6 +191,7 @@ def update_suggestion_status(
                 decided_at=suggestion.decided_at,
             )
         )
+    _recalculate_report_metrics(report)
     db.commit()
     db.refresh(report)
     return report
@@ -167,8 +219,13 @@ def list_reports(
         statement = statement.where(condition)
         count_statement = count_statement.where(condition)
     if status:
-        statement = statement.where(Report.status == status)
-        count_statement = count_statement.where(Report.status == status)
+        if status == "needs_review":
+            condition = or_(Report.status == "needs_review", Report.status == "matched")
+            statement = statement.where(condition)
+            count_statement = count_statement.where(condition)
+        else:
+            statement = statement.where(Report.status == status)
+            count_statement = count_statement.where(Report.status == status)
     if sort == "oldest":
         statement = statement.order_by(Report.created_at.asc())
     elif sort == "score":
@@ -210,6 +267,12 @@ def to_persisted_response(report: Report) -> PersistedReportResponse:
             explanation=suggestion.explanation,
             guideline_passage=suggestion.guideline_passage,
             source_url=suggestion.source_url,
+            action=cast(
+                Literal["add", "modify", "remove"],
+                getattr(suggestion, "action", "add") or "add",
+            ),
+            target_text=getattr(suggestion, "target_text", "") or "",
+            suggested_text=getattr(suggestion, "suggested_text", "") or "",
             status=(
                 "accepted"
                 if suggestion.decision == "accepted"

@@ -205,26 +205,19 @@ export function HistoryWorkspace() {
             size="sm"
             labelPlacement="outside"
             placeholder="All Statuses"
-            selectedKeys={[statusFilter]}
-            onChange={(e) => {
-              setStatusFilter(e.target.value || "all");
+            selectedKeys={new Set([statusFilter])}
+            onSelectionChange={(keys) => {
+              const val = Array.from(keys)[0] as string;
+              setStatusFilter(val || "all");
               setPage(1);
             }}
             startContent={<Filter className="w-3.5 h-3.5 text-foreground-400" />}
             aria-label="Filter by status"
           >
-            <SelectItem key="all">
-              All Statuses
-            </SelectItem>
-            <SelectItem key="complete">
-              Complete
-            </SelectItem>
-            <SelectItem key="needs_review">
-              Needs Review
-            </SelectItem>
-            <SelectItem key="no_match">
-              No Guideline Match
-            </SelectItem>
+            <SelectItem key="all">All Statuses</SelectItem>
+            <SelectItem key="complete">Complete</SelectItem>
+            <SelectItem key="needs_review">Needs Review</SelectItem>
+            <SelectItem key="no_match">No Guideline Match</SelectItem>
           </Select>
 
           {/* Sort By */}
@@ -232,23 +225,19 @@ export function HistoryWorkspace() {
             size="sm"
             labelPlacement="outside"
             placeholder="Sort by"
-            selectedKeys={[sortOption]}
-            onChange={(e) => {
-              setSortOption((e.target.value as "newest" | "oldest" | "score") || "newest");
+            selectedKeys={new Set([sortOption])}
+            onSelectionChange={(keys) => {
+              const val =
+                (Array.from(keys)[0] as "newest" | "oldest" | "score") || "newest";
+              setSortOption(val);
               setPage(1);
             }}
             startContent={<ArrowUpDown className="w-3.5 h-3.5 text-foreground-400" />}
             aria-label="Sort by"
           >
-            <SelectItem key="newest">
-              Newest First
-            </SelectItem>
-            <SelectItem key="oldest">
-              Oldest First
-            </SelectItem>
-            <SelectItem key="score">
-              Highest Completeness Score
-            </SelectItem>
+            <SelectItem key="newest">Newest First</SelectItem>
+            <SelectItem key="oldest">Oldest First</SelectItem>
+            <SelectItem key="score">Highest Completeness Score</SelectItem>
           </Select>
 
           {/* Group By */}
@@ -256,24 +245,20 @@ export function HistoryWorkspace() {
             size="sm"
             labelPlacement="outside"
             placeholder="Group By"
-            selectedKeys={[groupByOption || "none"]}
-            onChange={(e) => {
-              const val = e.target.value;
-              setGroupByOption(val === "none" || !val ? "" : (val as "diagnosis" | "status"));
+            selectedKeys={new Set([groupByOption || "none"])}
+            onSelectionChange={(keys) => {
+              const val = Array.from(keys)[0] as string;
+              setGroupByOption(
+                val === "none" || !val ? "" : (val as "diagnosis" | "status")
+              );
               setPage(1);
             }}
             startContent={<Layers className="w-3.5 h-3.5 text-foreground-400" />}
             aria-label="Group by"
           >
-            <SelectItem key="none">
-              No Grouping
-            </SelectItem>
-            <SelectItem key="diagnosis">
-              Group by Diagnosis
-            </SelectItem>
-            <SelectItem key="status">
-              Group by Status
-            </SelectItem>
+            <SelectItem key="none">No Grouping</SelectItem>
+            <SelectItem key="diagnosis">Group by Diagnosis</SelectItem>
+            <SelectItem key="status">Group by Status</SelectItem>
           </Select>
         </CardBody>
       </Card>
@@ -351,6 +336,99 @@ export function HistoryWorkspace() {
               )}
             </CardBody>
           </Card>
+        ) : groupByOption && groups && Object.keys(groups).length > 0 ? (
+          <div className="space-y-6">
+            {Object.entries(groups).map(([groupName, ids]) => {
+              const groupReviews = reviews.filter((r) => ids.includes(r.id));
+              if (groupReviews.length === 0) return null;
+              return (
+                <div key={groupName} className="space-y-2">
+                  <div className="flex items-center gap-2 px-1">
+                    <Layers className="w-4 h-4 text-primary" />
+                    <h3 className="text-sm font-semibold text-foreground">
+                      {groupName === "needs_review"
+                        ? "Needs Review"
+                        : groupName === "complete"
+                        ? "Complete"
+                        : groupName === "no_match"
+                        ? "No Guideline Match"
+                        : groupName}
+                    </h3>
+                    <Chip size="sm" variant="flat" color="default" className="h-5 text-xs">
+                      {groupReviews.length}
+                    </Chip>
+                  </div>
+                  <Table
+                    aria-label={`Group ${groupName} table`}
+                    shadow="none"
+                    className="border border-default-200 dark:border-default-100 rounded-large"
+                  >
+                    <TableHeader>
+                      <TableColumn>DOCUMENT & ID</TableColumn>
+                      <TableColumn>DIAGNOSIS</TableColumn>
+                      <TableColumn>STATUS</TableColumn>
+                      <TableColumn>SCORE</TableColumn>
+                      <TableColumn>SUGGESTIONS</TableColumn>
+                      <TableColumn>DATE</TableColumn>
+                      <TableColumn align="end">ACTION</TableColumn>
+                    </TableHeader>
+                    <TableBody>
+                      {groupReviews.map((item) => (
+                        <TableRow
+                          key={item.id}
+                          className="cursor-pointer hover:bg-default-50 transition-colors"
+                          onClick={() => router.push(`/reviews/${item.id}`)}
+                        >
+                          <TableCell>
+                            <div className="flex flex-col">
+                              <span className="text-xs font-semibold text-foreground truncate max-w-[200px]">
+                                {item.filename}
+                              </span>
+                              <span className="text-[10px] text-foreground-400 font-mono">
+                                #{item.id}
+                              </span>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <span className="text-xs text-foreground-800 font-medium truncate max-w-[180px]">
+                              {item.diagnosis || "Unspecified"}
+                            </span>
+                          </TableCell>
+                          <TableCell>{getStatusChip(item.status)}</TableCell>
+                          <TableCell>
+                            {getScoreDisplay(item.completeness_score, item.status)}
+                          </TableCell>
+                          <TableCell>
+                            <span className="text-xs text-foreground-600">
+                              {item.suggestions?.length || 0}
+                            </span>
+                          </TableCell>
+                          <TableCell>
+                            <span className="text-xs text-foreground-500 whitespace-nowrap">
+                              {new Date(item.created_at).toLocaleDateString()}
+                            </span>
+                          </TableCell>
+                          <TableCell>
+                            <Tooltip content="Open Review Workspace">
+                              <Button
+                                size="sm"
+                                variant="light"
+                                color="primary"
+                                endContent={<ExternalLink className="w-3.5 h-3.5" />}
+                                onPress={() => router.push(`/reviews/${item.id}`)}
+                              >
+                                Open
+                              </Button>
+                            </Tooltip>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              );
+            })}
+          </div>
         ) : (
           <Table
             aria-label="Clinical discharge review history table"

@@ -192,8 +192,136 @@ export function ExportModal({
                 description={previewError}
                 startContent={<AlertCircle className="w-4 h-4 shrink-0" />}
               />
+            ) : selectedFormat === "pdf" ? (
+              /* PDF A4 Document Sheet Simulation */
+              <div className="max-h-80 overflow-y-auto p-6 rounded-medium bg-white dark:bg-zinc-900 border border-default-300 dark:border-zinc-700 shadow-inner font-sans text-xs text-zinc-800 dark:text-zinc-200 space-y-4">
+                <div className="border-b-2 border-zinc-300 dark:border-zinc-700 pb-3 flex items-center justify-between">
+                  <div>
+                    <h3 className="text-sm font-bold tracking-wider uppercase text-zinc-900 dark:text-zinc-100">
+                      Clinical Discharge Summary
+                    </h3>
+                    <p className="text-[11px] text-zinc-500 dark:text-zinc-400 font-mono">
+                      File: {filename} &bull; Case #{reportId}
+                    </p>
+                  </div>
+                  <div className="text-right text-[10px] text-zinc-400">
+                    <div>Format: A4 PDF (ReportLab)</div>
+                    <div>Page 1 of 1</div>
+                  </div>
+                </div>
+
+                <div className="space-y-3 leading-relaxed">
+                  {previewContent ? (
+                    previewContent.split("\n\n").map((block, idx) => {
+                      const lines = block.split("\n").filter(Boolean);
+                      if (lines.length === 0) return null;
+                      const title = lines[0].replace(/-/g, "").trim();
+                      const items = lines.slice(1).filter((l) => !l.trim().match(/^-+$/));
+                      const isAddedOnReview = title.toLowerCase().includes("added on review");
+
+                      return (
+                        <div key={idx} className="space-y-1">
+                          {title && (
+                            <h4
+                              className={`text-[11px] font-bold uppercase tracking-wider pb-0.5 border-b ${
+                                isAddedOnReview
+                                  ? "text-emerald-700 dark:text-emerald-400 border-emerald-300 dark:border-emerald-800"
+                                  : "text-zinc-800 dark:text-zinc-200 border-zinc-200 dark:border-zinc-700"
+                              }`}
+                            >
+                              {title} {isAddedOnReview && "(Physician Approved)"}
+                            </h4>
+                          )}
+                          <ul className="space-y-1 pl-3">
+                            {items.map((item, iIdx) => (
+                              <li
+                                key={iIdx}
+                                className={`list-disc ${
+                                  isAddedOnReview
+                                    ? "text-emerald-900 dark:text-emerald-200 font-medium"
+                                    : "text-zinc-700 dark:text-zinc-300"
+                                }`}
+                              >
+                                {item.replace(/^-\s*/, "")}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <p className="italic text-zinc-400">No document content available.</p>
+                  )}
+                </div>
+
+                <div className="border-t border-zinc-200 dark:border-zinc-800 pt-3 text-[10px] text-zinc-400 text-center flex items-center justify-between">
+                  <span>Advisory Clinical Evaluation</span>
+                  <span>Verified Completeness Document</span>
+                </div>
+              </div>
+            ) : selectedFormat === "docx" ? (
+              /* Microsoft Word Document Sheet Simulation */
+              <div className="max-h-80 overflow-y-auto p-6 rounded-medium bg-white dark:bg-zinc-900 border border-blue-200 dark:border-blue-900/50 shadow-inner font-sans text-xs text-zinc-800 dark:text-zinc-200 space-y-4">
+                <div className="flex items-center justify-between pb-2 border-b border-blue-200 dark:border-blue-900/60">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2.5 h-2.5 bg-blue-600 rounded-xs" />
+                    <span className="font-semibold text-blue-700 dark:text-blue-400 text-xs">
+                      Microsoft Word Document (.docx)
+                    </span>
+                  </div>
+                  <span className="text-[10px] text-zinc-400 font-mono">
+                    1-inch margins &bull; Heading 1 styling
+                  </span>
+                </div>
+
+                <div className="space-y-3">
+                  {previewContent ? (
+                    previewContent.split("\n\n").map((block, idx) => {
+                      const lines = block.split("\n").filter(Boolean);
+                      if (lines.length === 0) return null;
+                      const title = lines[0].replace(/-/g, "").trim();
+                      const items = lines.slice(1).filter((l) => !l.trim().match(/^-+$/));
+                      const isAddedOnReview = title.toLowerCase().includes("added on review");
+
+                      return (
+                        <div key={idx} className="space-y-1">
+                          {title && (
+                            <h4
+                              className={`text-xs font-semibold ${
+                                isAddedOnReview
+                                  ? "text-emerald-700 dark:text-emerald-400"
+                                  : "text-blue-700 dark:text-blue-400"
+                              }`}
+                            >
+                              {title}
+                            </h4>
+                          )}
+                          <div className="space-y-1 pl-4">
+                            {items.map((item, iIdx) => (
+                              <div
+                                key={iIdx}
+                                className={`flex items-start gap-1.5 ${
+                                  isAddedOnReview
+                                    ? "text-emerald-800 dark:text-emerald-300 font-medium"
+                                    : "text-zinc-700 dark:text-zinc-300"
+                                }`}
+                              >
+                                <span className="text-zinc-400">&bull;</span>
+                                <span>{item.replace(/^-\s*/, "")}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <p className="italic text-zinc-400">No document content available.</p>
+                  )}
+                </div>
+              </div>
             ) : (
-              <div className="max-h-72 overflow-y-auto p-4 rounded-medium bg-default-50 border border-default-200 text-xs font-mono text-foreground-800 leading-relaxed whitespace-pre-wrap select-text">
+              /* TXT Monospace Raw Preview */
+              <div className="max-h-80 overflow-y-auto p-4 rounded-medium bg-default-50 border border-default-200 text-xs font-mono text-foreground-800 leading-relaxed whitespace-pre-wrap select-text">
                 {previewContent || "No preview content available."}
               </div>
             )}

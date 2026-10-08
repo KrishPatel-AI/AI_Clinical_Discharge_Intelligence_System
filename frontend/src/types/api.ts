@@ -36,11 +36,16 @@ export interface ComparisonItem {
   guideline_passage: string;
 }
 
+export type SuggestionAction = "add" | "modify" | "remove";
+
 export interface Suggestion {
   section: string;
   explanation: string;
   guideline_passage: string;
   source_url: string;
+  action?: SuggestionAction;
+  target_text?: string;
+  suggested_text?: string;
   suggestion_id?: number | null;
   decision?: SuggestionDecision | null;
 }
@@ -74,6 +79,9 @@ export interface PersistedSuggestion {
   explanation: string;
   guideline_passage: string;
   source_url: string;
+  action?: SuggestionAction;
+  target_text?: string;
+  suggested_text?: string;
   status: SuggestionStatus;
   decision?: SuggestionDecision | null;
   decided_at?: string | null;
