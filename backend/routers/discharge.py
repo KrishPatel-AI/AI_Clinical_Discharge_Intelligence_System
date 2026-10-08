@@ -87,7 +87,12 @@ async def _create_review(
         input_data={"file_type": Path(file.filename or "").suffix.lower()},
     ) as trace:
         source_text, extraction = await extract_upload_document(file, provider)
-        review = review_extraction(extraction)
+        try:
+            review = review_extraction(
+                extraction, source_text=source_text, provider=provider
+            )
+        except TypeError:
+            review = review_extraction(extraction)
         report = create_report(
             db,
             file.filename or "unknown",

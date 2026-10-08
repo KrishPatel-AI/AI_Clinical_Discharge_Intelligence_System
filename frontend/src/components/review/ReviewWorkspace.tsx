@@ -331,84 +331,92 @@ export function ReviewWorkspace({ reportId }: ReviewWorkspaceProps) {
         />
       )}
 
-      {/* Main Review Section: Split into Suggestions List & Document Comparison */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Left Column: Suggestions List (or notice if no_match) */}
-        <div className="lg:col-span-5 space-y-4">
-          <div className="flex items-center justify-between pb-1">
+      {/* Upper Section: Guideline Recommendations (Full Width) */}
+      <div className="space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-1 gap-2">
+          <div>
             <h2 className="text-base font-semibold text-foreground">
               Guideline Recommendations
             </h2>
-            <div className="flex items-center gap-1">
-              <Tabs
-                size="sm"
-                variant="light"
-                selectedKey={suggestionFilter}
-                onSelectionChange={(key) =>
-                  setSuggestionFilter(
-                    key as "all" | "pending" | "accepted" | "rejected"
-                  )
-                }
-              >
-                <Tab key="all" title={`All (${suggestions.length})`} />
-                <Tab key="pending" title={`Pending (${pendingSuggestions.length})`} />
-                <Tab key="accepted" title={`Accepted (${acceptedSuggestions.length})`} />
-                <Tab key="rejected" title={`Ignored (${rejectedSuggestions.length})`} />
-              </Tabs>
-            </div>
+            <p className="text-xs text-foreground-500">
+              Actionable clinical suggestions grounded in Indian national guidelines.
+            </p>
           </div>
-
-          {suggestions.length === 0 ? (
-            <div className="p-8 text-center rounded-medium bg-default-50 border border-default-200 text-xs text-foreground-400 space-y-1">
-              <p className="font-medium text-foreground-600">
-                {isNoMatch
-                  ? "No recommendations generated."
-                  : "No guideline gaps identified."}
-              </p>
-              <p>
-                {isNoMatch
-                  ? "Ungrounded suggestions are withheld for unindexed diagnoses."
-                  : "The discharge document comprehensively covers the matched guideline requirements."}
-              </p>
-            </div>
-          ) : filteredSuggestions.length === 0 ? (
-            <div className="p-6 text-center rounded-medium bg-default-50 border border-default-200 text-xs text-foreground-400">
-              No recommendations match the selected filter ({suggestionFilter}).
-            </div>
-          ) : (
-            <div className="space-y-3 max-h-[640px] overflow-y-auto pr-1">
-              {filteredSuggestions.map((suggestion) => (
-                <SuggestionCard
-                  key={suggestion.id}
-                  suggestion={suggestion}
-                  onUpdateStatus={handleUpdateSuggestion}
-                  onViewEvidence={setActiveEvidenceSuggestion}
-                  isUpdating={updatingSuggestionId === suggestion.id}
-                />
-              ))}
-            </div>
-          )}
+          <div className="flex items-center gap-1">
+            <Tabs
+              size="sm"
+              variant="light"
+              selectedKey={suggestionFilter}
+              onSelectionChange={(key) =>
+                setSuggestionFilter(
+                  key as "all" | "pending" | "accepted" | "rejected"
+                )
+              }
+            >
+              <Tab key="all" title={`All (${suggestions.length})`} />
+              <Tab key="pending" title={`Pending (${pendingSuggestions.length})`} />
+              <Tab key="accepted" title={`Accepted (${acceptedSuggestions.length})`} />
+              <Tab key="rejected" title={`Ignored (${rejectedSuggestions.length})`} />
+            </Tabs>
+          </div>
         </div>
 
-        {/* Right Column: Original vs Structured Document Comparison */}
-        <div className="lg:col-span-7 space-y-4">
-          <div className="flex items-center justify-between pb-1">
+        {suggestions.length === 0 ? (
+          <div className="p-8 text-center rounded-medium bg-default-50 border border-default-200 text-xs text-foreground-400 space-y-1">
+            <p className="font-medium text-foreground-600">
+              {isNoMatch
+                ? "No recommendations generated."
+                : "No guideline gaps identified."}
+            </p>
+            <p>
+              {isNoMatch
+                ? "Ungrounded suggestions are withheld for unindexed diagnoses."
+                : "The discharge document comprehensively covers the matched guideline requirements."}
+            </p>
+          </div>
+        ) : filteredSuggestions.length === 0 ? (
+          <div className="p-6 text-center rounded-medium bg-default-50 border border-default-200 text-xs text-foreground-400">
+            No recommendations match the selected filter ({suggestionFilter}).
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            {filteredSuggestions.map((suggestion) => (
+              <SuggestionCard
+                key={suggestion.id}
+                suggestion={suggestion}
+                onUpdateStatus={handleUpdateSuggestion}
+                onViewEvidence={setActiveEvidenceSuggestion}
+                isUpdating={updatingSuggestionId === suggestion.id}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Lower Section: Document Comparison (50% Width Side-by-Side) */}
+      <div className="space-y-4 pt-2">
+        <div className="flex items-center justify-between pb-1">
+          <div>
             <h2 className="text-base font-semibold text-foreground">
               Document Comparison
             </h2>
-            <span className="text-xs text-foreground-400">
-              Live Structured Synchronization
-            </span>
+            <p className="text-xs text-foreground-500">
+              Side-by-side inspection of original input versus live reviewed output with highlighted decisions.
+            </p>
           </div>
-
-          <DocumentComparison
-            originalText={report.source_text || ""}
-            structuredText={structuredPreview}
-            acceptedCount={acceptedSuggestions.length}
-            isLoadingPreview={isLoadingPreview}
-            onRefreshPreview={() => fetchStructuredPreview(report.id)}
-          />
+          <span className="text-xs text-foreground-400 font-mono">
+            Original (50%) &bull; Reviewed (50%)
+          </span>
         </div>
+
+        <DocumentComparison
+          originalText={report.source_text || ""}
+          structuredText={structuredPreview}
+          acceptedCount={acceptedSuggestions.length}
+          isLoadingPreview={isLoadingPreview}
+          onRefreshPreview={() => fetchStructuredPreview(report.id)}
+          suggestions={suggestions}
+        />
       </div>
 
       {/* Evidence Modal */}

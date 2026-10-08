@@ -8,6 +8,7 @@ from typing import Any, TypedDict, cast
 
 from langgraph.graph import END, START, StateGraph
 
+from backend.llm.provider import deterministic_guideline_recommendation
 from backend.models.schemas import (
     ComparisonItem,
     DischargeExtraction,
@@ -28,6 +29,8 @@ class ReviewState(TypedDict, total=False):
     match: GuidelineMatch | None
     comparisons: list[ComparisonItem]
     result: ReviewResponse
+    source_text: str
+    provider: Any
 
 
 def _tokens(value: str) -> set[str]:
@@ -71,13 +74,22 @@ def _retrieve_impl(state: ReviewState) -> dict[str, GuidelineMatch | None]:
     if float(result["distances"][selected_position]) < MIN_RETRIEVAL_SIMILARITY:
         return {"match": None}
     metadata = result["metadatas"][selected_position]
+    diag_slug = str(metadata.get("diagnosis_slug", ""))
+    source_url = str(metadata.get("source_url", ""))
+    from backend.services.guidelines import resolve_guideline_info
+
+    guideline_info = resolve_guideline_info(diag_slug, source_url)
     return {
         "match": GuidelineMatch(
             diagnosis=str(metadata["diagnosis"]),
-            diagnosis_slug=str(metadata["diagnosis_slug"]),
-            source_url=str(metadata["source_url"]),
+            diagnosis_slug=guideline_info.get("diagnosis_slug") or diag_slug,
+            source_url=source_url,
             passage=str(result["documents"][selected_position]),
             similarity=float(result["distances"][selected_position]),
+            document_title=guideline_info.get("document_title"),
+            document_filename=guideline_info.get("document_filename"),
+            source_name=guideline_info.get("source_name"),
+            guideline_document_url=guideline_info.get("guideline_document_url"),
         )
     }
 
@@ -169,19 +181,47 @@ def _score_impl(state: ReviewState) -> dict[str, ReviewResponse]:
     comparisons = state.get("comparisons", [])
     matched_count = sum(item.status == "matched" for item in comparisons)
     score = round(100 * matched_count / len(comparisons)) if comparisons else 0
-    suggestions = [
-        Suggestion(
-            section=item.section,
-            explanation=(
-                f"Review the {item.section.replace('_', ' ')} section against "
-                "the retrieved guideline passage."
-            ),
-            guideline_passage=item.guideline_passage,
-            source_url=match.source_url,
+
+    extraction = state["extraction"]
+    source_text = state.get("source_text", "")
+    provider = state.get("provider")
+
+    suggestions: list[Suggestion] = []
+    for item in comparisons:
+        if item.status != "gap":
+            continue
+
+        if provider and hasattr(provider, "generate_recommendation"):
+            rec = provider.generate_recommendation(
+                item.section,
+                source_text,
+                item.guideline_passage,
+                extraction.diagnosis,
+            )
+        else:
+            rec = deterministic_guideline_recommendation(
+                item.section,
+                source_text,
+                item.guideline_passage,
+                extraction.diagnosis,
+            )
+
+        suggestions.append(
+            Suggestion(
+                section=item.section,
+                action=rec.get("action", "add"),
+                target_text=rec.get("target_text", ""),
+                suggested_text=rec.get("suggested_text", ""),
+                explanation=rec.get("explanation", ""),
+                guideline_passage=item.guideline_passage,
+                source_url=match.source_url,
+                document_title=match.document_title,
+                document_filename=match.document_filename,
+                source_name=match.source_name,
+                guideline_document_url=match.guideline_document_url,
+            )
         )
-        for item in comparisons
-        if item.status == "gap"
-    ]
+
     return {
         "result": result.model_copy(
             update={"completeness_score": score, "suggestions": suggestions}
@@ -207,10 +247,19 @@ REVIEW_GRAPH = _build_graph()
 def review_extraction(
     extraction: DischargeExtraction,
     index_dir: Path = DEFAULT_INDEX_DIR,
+    source_text: str = "",
+    provider: Any = None,
 ) -> ReviewResponse:
     """Retrieve evidence and compare it with an extracted discharge summary."""
     state = cast(
         ReviewState,
-        REVIEW_GRAPH.invoke({"extraction": extraction, "index_dir": index_dir}),
+        REVIEW_GRAPH.invoke(
+            {
+                "extraction": extraction,
+                "index_dir": index_dir,
+                "source_text": source_text,
+                "provider": provider,
+            }
+        ),
     )
     return state["result"]

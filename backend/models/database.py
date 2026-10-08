@@ -34,6 +34,7 @@ class Report(Base):
         String(16), nullable=True
     )
     completeness_score: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    initial_score: Mapped[int | None] = mapped_column(Integer, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
@@ -55,6 +56,9 @@ class SuggestionRecord(Base):
     explanation: Mapped[str] = mapped_column(Text, nullable=False)
     guideline_passage: Mapped[str] = mapped_column(Text, nullable=False)
     source_url: Mapped[str] = mapped_column(Text, nullable=False)
+    action: Mapped[str] = mapped_column(String(32), default="add", nullable=False)
+    target_text: Mapped[str] = mapped_column(Text, default="", nullable=False)
+    suggested_text: Mapped[str] = mapped_column(Text, default="", nullable=False)
     decision: Mapped[str | None] = mapped_column(String(16), nullable=True)
     decided_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True

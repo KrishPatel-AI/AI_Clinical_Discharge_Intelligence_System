@@ -9,6 +9,7 @@ import {
   getPreview,
   exportReview,
   listReviews,
+  getGuidelineDocumentUrl,
 } from "./api";
 
 describe("Frontend API Client Tests", () => {
@@ -246,5 +247,13 @@ describe("Frontend API Client Tests", () => {
     } finally {
       globalThis.fetch = originalFetch;
     }
+  });
+
+  it("getGuidelineDocumentUrl formats relative paths and slug queries correctly", () => {
+    const url1 = getGuidelineDocumentUrl("/guidelines/asthma/document?filename=test.pdf");
+    assert(url1.endsWith("/guidelines/asthma/document?filename=test.pdf"));
+
+    const url2 = getGuidelineDocumentUrl("asthma", "test.pdf");
+    assert(url2.includes("/guidelines/asthma/document?filename=test.pdf"));
   });
 });

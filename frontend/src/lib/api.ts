@@ -219,3 +219,15 @@ export async function listReviews(
     );
   }
 }
+
+export function getGuidelineDocumentUrl(
+  pathOrSlug: string,
+  filename?: string | null
+): string {
+  if (pathOrSlug.startsWith("/guidelines/")) {
+    return `${API_BASE_URL}${pathOrSlug}`;
+  }
+  const cleanSlug = encodeURIComponent(pathOrSlug);
+  const fileQuery = filename ? `?filename=${encodeURIComponent(filename)}` : "";
+  return `${API_BASE_URL}/guidelines/${cleanSlug}/document${fileQuery}`;
+}

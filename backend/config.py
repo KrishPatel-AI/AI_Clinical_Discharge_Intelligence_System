@@ -10,7 +10,10 @@ def get_llm_provider() -> str:
 
 def get_ollama_base_url() -> str:
     """Return the configured Ollama service URL."""
-    return os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+    url = os.getenv("OLLAMA_BASE_URL", "http://127.0.0.1:11434")
+    if "localhost" in url:
+        url = url.replace("localhost", "127.0.0.1")
+    return url
 
 
 def get_ollama_model() -> str:

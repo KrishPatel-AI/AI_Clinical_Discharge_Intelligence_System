@@ -93,11 +93,27 @@ export function SuggestionCard({
             <Chip
               size="sm"
               variant="flat"
-              color="primary"
-              className="text-xs font-medium"
+              color="default"
+              className="text-xs font-semibold uppercase"
             >
-              {suggestion.section}
+              {suggestion.section.replace(/_/g, " ")}
             </Chip>
+            {suggestion.action && (
+              <Chip
+                size="sm"
+                variant="flat"
+                color={
+                  suggestion.action === "modify"
+                    ? "warning"
+                    : suggestion.action === "remove"
+                    ? "danger"
+                    : "primary"
+                }
+                className="text-[10px] font-bold uppercase"
+              >
+                {suggestion.action}
+              </Chip>
+            )}
             <span className="text-xs text-foreground-400">
               #{suggestion.id}
             </span>
@@ -105,9 +121,31 @@ export function SuggestionCard({
           {getStatusChip()}
         </div>
 
-        <p className="text-sm text-foreground-800 leading-relaxed">
+        <p className="text-sm font-medium text-foreground-900 dark:text-foreground-400 leading-relaxed">
           {suggestion.explanation}
         </p>
+
+        {suggestion.target_text && (
+          <div className="p-2 rounded-medium bg-default-100/70 border border-default-200/60 text-xs">
+            <span className="font-semibold text-foreground-500 uppercase text-[10px] block mb-0.5">
+              Referenced in Document
+            </span>
+            <span className="font-mono text-foreground-700 dark:text-foreground-300 italic">
+              &ldquo;{suggestion.target_text}&rdquo;
+            </span>
+          </div>
+        )}
+
+        {suggestion.suggested_text && (
+          <div className="p-2.5 rounded-medium bg-primary-50/50 dark:bg-primary-950/20 border border-primary-200/60 dark:border-primary-800/40 text-xs">
+            <span className="font-semibold text-primary uppercase text-[10px] block mb-0.5">
+              Suggested Addition / Clinical Wording
+            </span>
+            <span className="text-foreground-800 dark:text-foreground-400 font-medium leading-relaxed">
+              {suggestion.suggested_text}
+            </span>
+          </div>
+        )}
 
         {suggestion.decided_at && (
           <p className="text-[11px] text-foreground-400">
